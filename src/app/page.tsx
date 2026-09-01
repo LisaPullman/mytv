@@ -62,7 +62,7 @@ function HomeClient() {
   const [showHttpWarning, setShowHttpWarning] = useState(true);
   const [showAIChat, setShowAIChat] = useState(false);
   const [aiEnabled, setAiEnabled] = useState(false);
-  const [aiDefaultMessageNoVideo, setAiDefaultMessageNoVideo] = useState('你好！我是MoonTVPlus的AI影视助手。想看什么电影或剧集？需要推荐吗？');
+  const [aiDefaultMessageNoVideo, setAiDefaultMessageNoVideo] = useState('你好！我是 f.foxai 的 AI 影视助手。想看什么电影或剧集？需要推荐吗？');
   const [sourceSearchEnabled, setSourceSearchEnabled] = useState(true);
   const [musicEnabled, setMusicEnabled] = useState(false);
   const [mangaEnabled, setMangaEnabled] = useState(false);
@@ -448,17 +448,26 @@ function HomeClient() {
     switch (moduleId) {
       case 'hotMovies':
         return (
-          <section key="hotMovies" className='mb-8'>
+          <section key="hotMovies" className='mb-8 reveal reveal-delay-2'>
             <div className='mb-4 flex items-center justify-between'>
-              <h2 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
+              <span
+                className='inline-block h-4 w-1 rounded-full bg-[color:var(--brand)]'
+                aria-hidden='true'
+              />
+              
+              <h2 className='inline-flex items-center gap-2 text-xl font-semibold tracking-tight text-[color:var(--ink)]'>
+                <span
+                  className='inline-block h-4 w-1 rounded-full bg-[color:var(--brand)]'
+                  aria-hidden='true'
+                />
                 热门电影
               </h2>
               <Link
                 href='/douban?type=movie'
-                className='flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                className='inline-flex items-center gap-0.5 text-sm text-[color:var(--ink-soft)] hover:text-[color:var(--brand)] transition-colors'
               >
                 查看更多
-                <ChevronRight className='w-4 h-4 ml-1' />
+                <ChevronRight className='w-4 h-4' />
               </Link>
             </div>
             <ScrollableRow>
@@ -498,7 +507,12 @@ function HomeClient() {
         return (
           <section key="hotDuanju" className='mb-8'>
             <div className='mb-4 flex items-center justify-between'>
-              <h2 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
+              <span
+                className='inline-block h-4 w-1 rounded-full bg-[color:var(--brand)]'
+                aria-hidden='true'
+              />
+              
+              <h2 className='inline-flex items-center gap-2 text-xl font-semibold tracking-tight text-[color:var(--ink)]'>
                 热播短剧
               </h2>
             </div>
@@ -545,12 +559,17 @@ function HomeClient() {
         return (
           <section key="bangumiCalendar" className='mb-8'>
             <div className='mb-4 flex items-center justify-between'>
-              <h2 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
+              <span
+                className='inline-block h-4 w-1 rounded-full bg-[color:var(--brand)]'
+                aria-hidden='true'
+              />
+              
+              <h2 className='inline-flex items-center gap-2 text-xl font-semibold tracking-tight text-[color:var(--ink)]'>
                 新番放送
               </h2>
               <Link
                 href='/douban?type=anime'
-                className='flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                className='inline-flex items-center gap-0.5 text-sm text-[color:var(--ink-soft)] hover:text-[color:var(--brand)] transition-colors'
               >
                 查看更多
                 <ChevronRight className='w-4 h-4 ml-1' />
@@ -610,12 +629,17 @@ function HomeClient() {
         return (
           <section key="hotTvShows" className='mb-8'>
             <div className='mb-4 flex items-center justify-between'>
-              <h2 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
+              <span
+                className='inline-block h-4 w-1 rounded-full bg-[color:var(--brand)]'
+                aria-hidden='true'
+              />
+              
+              <h2 className='inline-flex items-center gap-2 text-xl font-semibold tracking-tight text-[color:var(--ink)]'>
                 热门剧集
               </h2>
               <Link
                 href='/douban?type=tv'
-                className='flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                className='inline-flex items-center gap-0.5 text-sm text-[color:var(--ink-soft)] hover:text-[color:var(--brand)] transition-colors'
               >
                 查看更多
                 <ChevronRight className='w-4 h-4 ml-1' />
@@ -657,12 +681,17 @@ function HomeClient() {
         return (
           <section key="hotVarietyShows" className='mb-8'>
             <div className='mb-4 flex items-center justify-between'>
-              <h2 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
+              <span
+                className='inline-block h-4 w-1 rounded-full bg-[color:var(--brand)]'
+                aria-hidden='true'
+              />
+              
+              <h2 className='inline-flex items-center gap-2 text-xl font-semibold tracking-tight text-[color:var(--ink)]'>
                 热门综艺
               </h2>
               <Link
                 href='/douban?type=tv&category=show'
-                className='flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                className='inline-flex items-center gap-0.5 text-sm text-[color:var(--ink-soft)] hover:text-[color:var(--brand)] transition-colors'
               >
                 查看更多
                 <ChevronRight className='w-4 h-4 ml-1' />
@@ -705,7 +734,12 @@ function HomeClient() {
         return (
           <section key="upcomingContent" className='mb-8'>
             <div className='mb-4 flex items-center justify-between'>
-              <h2 className='text-xl font-bold text-gray-800 dark:text-gray-200'>
+              <span
+                className='inline-block h-4 w-1 rounded-full bg-[color:var(--brand)]'
+                aria-hidden='true'
+              />
+              
+              <h2 className='inline-flex items-center gap-2 text-xl font-semibold tracking-tight text-[color:var(--ink)]'>
                 即将上映
               </h2>
             </div>
@@ -770,7 +804,7 @@ function HomeClient() {
                   <div className='min-w-0'>
                     <div className='flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-[color:var(--brand)] font-semibold'>
                       <span className='pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-[color:var(--brand)]' />
-                      MoonTV Plus
+                      f.foxai
                     </div>
                     <h1 className='mt-1 text-xl sm:text-2xl font-semibold leading-tight tracking-tight'>
                       <span className='text-holo'>One key, every stream.</span>

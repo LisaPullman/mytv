@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: '安全警告 - MoonTVPlus',
+  title: '安全警告 - f.foxai',
   description: '站点安全配置警告',
 };
 

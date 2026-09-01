@@ -50,13 +50,13 @@ const MobileHeader = ({ showBackButton = false }: MobileHeaderProps) => {
         </div>
       </div>
 
-      {/* 中间：foxai Logo（绝对居中） */}
+      {/* 中间：f.foxai Logo（绝对居中） */}
       <div className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'>
         <Link
           href='/'
           prefetch={false}
           className='group inline-flex items-center gap-1.5'
-          aria-label={siteName}
+          aria-label={siteName || 'f.foxai'}
         >
           <span
             className='inline-flex items-center justify-center rounded-lg p-1 transition-transform duration-300 group-hover:scale-105'
@@ -88,12 +88,18 @@ const MobileHeader = ({ showBackButton = false }: MobileHeaderProps) => {
             </svg>
           </span>
           <span
-            className='text-[17px] font-semibold tracking-tight'
+            className='inline-flex items-baseline gap-0.5 text-[17px] font-semibold tracking-tight'
             style={{ letterSpacing: '-0.01em', color: 'var(--ink)' }}
           >
-            {(siteName ?? 'Moon').slice(0, -2)}
-            <span style={{ color: 'var(--brand)' }}>
-              {(siteName ?? 'TV').slice(-2)}
+            <span>f</span>
+            <span
+              aria-hidden='true'
+              className='text-[color:var(--ink-soft)] font-light'
+            >
+              .
+            </span>
+            <span>
+              fox<span style={{ color: 'var(--brand)' }}>ai</span>
             </span>
           </span>
         </Link>

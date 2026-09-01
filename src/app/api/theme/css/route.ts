@@ -1,19 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any,no-console */
-
 import { NextRequest, NextResponse } from 'next/server';
-
 import { getConfig } from '@/lib/config';
-
 import { getThemeCSS } from '@/styles/themes';
-
 export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic'; // 禁用缓存
-
 export async function GET(request: NextRequest) {
   try {
+
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
     const adminConfig = await getConfig();
     const themeConfig = adminConfig.ThemeConfig;
-
     // 如果没有配置主题，返回空CSS
     if (!themeConfig) {
       return new NextResponse('', {
@@ -23,9 +19,7 @@ export async function GET(request: NextRequest) {
         },
       });
     }
-
     let css = '';
-
     // 如果启用了内置主题，使用内置主题CSS
     if (themeConfig.enableBuiltInTheme) {
       css = getThemeCSS(themeConfig.builtInTheme as any);
@@ -33,7 +27,6 @@ export async function GET(request: NextRequest) {
       // 否则使用自定义CSS
       css = themeConfig.customCSS || '';
     }
-
     // 设置缓存控制
     const cacheMinutes = themeConfig.cacheMinutes || 1440; // 默认1天（1440分钟）
     const maxAge = cacheMinutes * 60; // 转换为秒
@@ -41,10 +34,8 @@ export async function GET(request: NextRequest) {
     const cacheControl = themeConfig.enableCache
       ? `public, max-age=${maxAge}, stale-while-revalidate=${staleWhileRevalidate}`
       : 'no-store';
-
     // 添加版本号到ETag
     const etag = `"${themeConfig.cacheVersion}"`;
-
     // 检查客户端缓存
     const ifNoneMatch = request.headers.get('if-none-match');
     if (ifNoneMatch === etag && themeConfig.enableCache) {
@@ -56,7 +47,6 @@ export async function GET(request: NextRequest) {
         },
       });
     }
-
     return new NextResponse(css, {
       headers: {
         'Content-Type': 'text/css; charset=utf-8',

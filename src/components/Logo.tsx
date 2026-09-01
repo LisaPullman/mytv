@@ -10,8 +10,10 @@ import type { SVGProps } from 'react';
  *   • crossbar (request) M12.5 31h21
  *   • endpoint dot       circle(49, 9, r=5.5)
  *
- * Strokes inherit currentColor (or --brand) so the lockup can sit on any
- * surface; the dot picks up the same accent so the mark reads as one shape.
+ * The lockup "f.foxai" pairs the bare mark with the wordmark
+ * (where the "ai" suffix picks up the brand accent), separated by a
+ * middle-dot so the brand reads as one monogram. Strokes inherit
+ * currentColor (or --brand) so the lockup can sit on any surface.
  */
 
 const PATHS = (
@@ -70,12 +72,7 @@ export function FoxTile({ size = 24, title, className, ...rest }: LogoProps) {
       {...rest}
     >
       {title ? <title>{title}</title> : null}
-      <rect
-        width='64'
-        height='64'
-        rx='14'
-        className='fill-[var(--brand)]'
-      />
+      <rect width='64' height='64' rx='14' className='fill-[var(--brand)]' />
       <g
         fill='none'
         stroke='var(--brand-foreground)'
@@ -97,28 +94,51 @@ export function FoxTile({ size = 24, title, className, ...rest }: LogoProps) {
   );
 }
 
-/** Mark + "foxai" wordmark with the "ai" suffix in the brand accent. */
+/**
+ * f.foxai lockup — mark + middle-dot + wordmark ("ai" in brand accent).
+ * Designed to be the default site identity at all sizes ≥ 16 px.
+ */
 export function FoxLockup({
   size = 24,
   title,
   className,
+  brandDotClassName,
   ...rest
-}: Omit<LogoProps, 'size'> & { size?: number }) {
+}: Omit<LogoProps, 'size'> & {
+  size?: number;
+  /** Optional class for the middle-dot separator (between mark and wordmark). */
+  brandDotClassName?: string;
+}) {
   const wordSize = Math.max(10, Math.round(size * 0.6));
+  const gap = Math.max(4, Math.round(size * 0.18));
   return (
     <span
-      className={`inline-flex items-center gap-2 ${className ?? ''}`}
+      className={`inline-flex items-center ${className ?? ''}`}
+      style={{ gap }}
       {...(rest as any)}
     >
       <FoxMark size={size} title={title} />
+      <span
+        aria-hidden='true'
+        className={`text-[color:var(--ink-soft)] ${
+          brandDotClassName ?? ''
+        }`}
+        style={{
+          fontSize: wordSize,
+          lineHeight: 1,
+          fontWeight: 400,
+        }}
+      >
+        .
+      </span>
       <span
         style={{
           fontWeight: 600,
           letterSpacing: '-0.01em',
           fontSize: wordSize,
           lineHeight: 1,
+          color: 'var(--ink)',
         }}
-        className='text-[color:var(--ink)]'
       >
         fox<span style={{ color: 'var(--brand)' }}>ai</span>
       </span>

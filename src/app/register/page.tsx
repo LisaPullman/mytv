@@ -11,6 +11,7 @@ import { checkForUpdates, UpdateStatus } from '@/lib/version_check';
 
 import { useSite } from '@/components/SiteProvider';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { FoxMark } from '@/components/Logo';
 
 // 版本显示组件
 function VersionDisplay() {
@@ -258,10 +259,36 @@ function RegisterPageClient() {
       <div className='absolute top-4 right-4'>
         <ThemeToggle />
       </div>
-      <div className='relative z-10 w-full max-w-md rounded-3xl bg-gradient-to-b from-white/90 via-white/70 to-white/40 dark:from-zinc-900/90 dark:via-zinc-900/70 dark:to-zinc-900/40 shadow-2xl p-10 dark:border dark:border-zinc-800'>
-        <h1 className='text-green-600 tracking-tight text-center text-3xl font-extrabold mb-2 bg-clip-text drop-shadow-sm'>
-          {siteName}
-        </h1>
+      <div className='relative z-10 w-full max-w-md rounded-3xl bg-gradient-to-b from-white/90 via-white/70 to-white/40 dark:from-zinc-900/90 dark:via-zinc-900/70 dark:to-zinc-900/40 shadow-2xl p-10 dark:border dark:border-zinc-800 edge-highlight'>
+        <div className='flex items-center justify-center mb-2'>
+          <div className='flex items-center gap-2'>
+            <span
+              className='relative inline-flex items-center justify-center rounded-xl p-1.5 glow-brand-soft'
+              style={{
+                background:
+                  'linear-gradient(135deg, color-mix(in oklch, var(--brand) 18%, transparent), color-mix(in oklch, var(--brand) 4%, transparent))',
+                border: '1px solid color-mix(in oklch, var(--brand) 28%, transparent)',
+              }}
+            >
+              <FoxMark size={28} title={siteName || 'f.foxai'} />
+            </span>
+            <span
+              className='inline-flex items-baseline gap-1 text-3xl font-semibold tracking-tight'
+              style={{ letterSpacing: '-0.01em', color: 'var(--ink)' }}
+            >
+              <span>f</span>
+              <span
+                aria-hidden='true'
+                className='text-[color:var(--ink-soft)] font-light'
+              >
+                .
+              </span>
+              <span>
+                fox<span style={{ color: 'var(--brand)' }}>ai</span>
+              </span>
+            </span>
+          </div>
+        </div>
         <p className='text-center text-sm text-gray-600 dark:text-gray-400 mb-8'>
           创建新账号
         </p>

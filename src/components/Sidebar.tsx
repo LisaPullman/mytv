@@ -27,15 +27,16 @@ const SidebarContext = createContext<SidebarContextType>({
 
 export const useSidebar = () => useContext(SidebarContext);
 
-// foxai "Trace" mark + site wordmark. The mark sits left, the site name
-// takes the rest of the row, and the accent dot reads as a brand cue.
+// f.foxai lockup — foxai "Trace" mark + middle-dot + wordmark, with the
+// "ai" suffix in the brand accent. The wrapper chip adds the soft brand
+// glow so the brand reads at every sidebar width.
 const Logo = () => {
   const { siteName } = useSite();
   return (
     <Link
       href='/'
       className='group flex items-center gap-2.5 h-16 px-4 select-none'
-      aria-label={siteName}
+      aria-label={siteName || 'f.foxai'}
     >
       <span
         className='relative inline-flex items-center justify-center rounded-xl p-1.5 glow-brand-soft transition-transform duration-300 group-hover:scale-105'
@@ -66,15 +67,21 @@ const Logo = () => {
         </svg>
       </span>
       <span
-        className='text-[19px] font-semibold tracking-tight'
+        className='inline-flex items-baseline gap-1 text-[19px] font-semibold tracking-tight'
         style={{
           letterSpacing: '-0.01em',
           color: 'var(--ink)',
         }}
       >
-        {siteName?.slice(0, -2) ?? 'Moon'}
-        <span style={{ color: 'var(--brand)' }}>
-          {(siteName ?? 'TV').slice(-2)}
+        <span>f</span>
+        <span
+          aria-hidden='true'
+          className='text-[color:var(--ink-soft)] font-light'
+        >
+          .
+        </span>
+        <span>
+          fox<span style={{ color: 'var(--brand)' }}>ai</span>
         </span>
       </span>
     </Link>
