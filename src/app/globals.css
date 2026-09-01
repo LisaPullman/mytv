@@ -1,0 +1,369 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   foxai brand layer — single source of truth for tokens.
+   Light + dark variants tuned in OKLCH so perceived lightness stays stable
+   across modes. Everything (charts, glows, soft fills) derives from --brand.
+   ========================================================================== */
+:root {
+  /* Ember accents */
+  --brand: #E2571F;                  /* oklch(0.633 0.185 39.6) */
+  --brand-foreground: #FFFFFF;
+  --brand-muted: rgba(226, 87, 31, 0.12);
+  --brand-ring: rgba(226, 87, 31, 0.35);
+  --brand-glow: rgba(226, 87, 31, 0.45);
+
+  /* Surface tokens (light) */
+  --ink: oklch(0.205 0 0);
+  --ink-soft: oklch(0.45 0 0);
+  --line: oklch(0.9 0 0);
+  --surface: oklch(0.99 0 0);
+  --surface-2: oklch(0.965 0 0);
+  --code-bg: oklch(0.18 0 0);
+  --code-fg: oklch(0.95 0 0);
+
+  /* Backwards-compat with the rest of the app (uses rgb tuple form) */
+  --foreground-rgb: 33, 33, 33;
+}
+
+:root.dark,
+.dark {
+  --brand: #FF7A4D;                  /* oklch(0.727 0.173 39) */
+  --brand-foreground: #1A1A1A;
+  --brand-muted: rgba(255, 122, 77, 0.16);
+  --brand-ring: rgba(255, 122, 77, 0.45);
+  --brand-glow: rgba(255, 122, 77, 0.55);
+
+  --ink: oklch(0.96 0 0);
+  --ink-soft: oklch(0.7 0 0);
+  --line: oklch(0.28 0 0);
+  --surface: oklch(0.16 0 0);
+  --surface-2: oklch(0.22 0 0);
+  --code-bg: oklch(0.10 0 0);
+  --code-fg: oklch(0.95 0 0);
+
+  --foreground-rgb: 240, 240, 240;
+}
+
+/* NProgress — uses the brand accent in both modes */
+#nprogress { pointer-events: none; }
+#nprogress .bar {
+  background: var(--brand);
+  position: fixed; z-index: 9999; top: 0; left: 0;
+  width: 100%; height: 3px;
+  box-shadow:
+    0 0 10px var(--brand-glow),
+    0 0 5px var(--brand-ring);
+}
+#nprogress .peg {
+  display: block; position: absolute; right: 0;
+  width: 100px; height: 100%;
+  box-shadow:
+    0 0 10px var(--brand-glow),
+    0 0 5px var(--brand-ring);
+  opacity: 1;
+  transform: rotate(3deg) translate(0px, -4px);
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+}
+
+/* ==========================================================================
+   Global surfaces — modern gradient mesh + subtle film grain.
+   Replaces the original flat sky gradient with a layered "aurora" backdrop
+   so the page reads futuristic without being noisy.
+   ========================================================================== */
+html, body {
+  height: 100%;
+  overflow-x: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  color: var(--ink);
+  font-feature-settings: 'cv11', 'ss01', 'ss03';
+}
+
+html:not(.dark) body {
+  color: rgb(var(--foreground-rgb));
+  background:
+    radial-gradient(1200px 600px at 12% -10%, rgba(226, 87, 31, 0.18), transparent 60%),
+    radial-gradient(900px 500px at 90% 8%, rgba(14, 165, 233, 0.15), transparent 65%),
+    radial-gradient(700px 700px at 60% 110%, rgba(168, 85, 247, 0.12), transparent 70%),
+    linear-gradient(180deg,
+      #f5f5f1 0%,
+      #eef1f6 30%,
+      #f3f0ec 60%,
+      #e9ecef 90%,
+      #dde2e8 100%);
+  background-attachment: fixed;
+}
+
+.dark body {
+  color: rgb(var(--foreground-rgb));
+  background:
+    radial-gradient(1200px 600px at 12% -10%, rgba(255, 122, 77, 0.22), transparent 60%),
+    radial-gradient(900px 500px at 90% 8%, rgba(56, 189, 248, 0.18), transparent 65%),
+    radial-gradient(800px 800px at 60% 110%, rgba(168, 85, 247, 0.16), transparent 70%),
+    linear-gradient(180deg,
+      #07080b 0%,
+      #0b0d12 30%,
+      #08090d 60%,
+      #050609 100%);
+  background-attachment: fixed;
+}
+
+/* Subtle film grain overlay so large flat surfaces don't band on cheap displays */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.7'/></svg>");
+}
+
+/* App content lifts above the grain layer */
+#__next, body > * { position: relative; z-index: 1; }
+
+/* Custom scrollbar — keeps the brand on thumb hover */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: color-mix(in oklch, var(--ink) 18%, transparent);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklch, var(--brand) 60%, transparent);
+}
+* { scrollbar-width: thin; scrollbar-color: color-mix(in oklch, var(--ink) 18%, transparent) transparent; }
+
+/* ==========================================================================
+   Video card hover — springy lift with a warm brand rim.
+   ========================================================================== */
+.video-card-hover {
+  transition:
+    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.35s ease;
+  will-change: transform;
+}
+.video-card-hover:hover {
+  transform: translateY(-4px) scale(1.04);
+  box-shadow:
+    0 18px 40px -12px rgba(0, 0, 0, 0.35),
+    0 0 0 1px color-mix(in oklch, var(--brand) 35%, transparent),
+    0 0 28px -8px var(--brand-glow);
+}
+
+/* Gradient overlay used by media previews */
+.gradient-overlay {
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.85) 100%
+  );
+}
+
+/* ==========================================================================
+   Modern surface utilities — glassmorphism, neon rims, soft scrollbars,
+   conic "aurora" mesh for hero sections. Compose with Tailwind on top.
+   ========================================================================== */
+@layer utilities {
+  /* Frosted glass surface — works on both light & dark via color-mix */
+  .glass {
+    background: color-mix(in oklch, var(--surface) 72%, transparent);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border: 1px solid color-mix(in oklch, var(--ink) 8%, transparent);
+  }
+  .dark .glass {
+    background: color-mix(in oklch, var(--surface) 55%, transparent);
+    border-color: color-mix(in oklch, var(--ink) 10%, transparent);
+  }
+
+  /* Brand-tinted glass */
+  .glass-brand {
+    background: linear-gradient(135deg,
+      color-mix(in oklch, var(--brand) 14%, transparent),
+      color-mix(in oklch, var(--brand) 4%, transparent));
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border: 1px solid color-mix(in oklch, var(--brand) 28%, transparent);
+  }
+
+  /* Neon rim glow */
+  .glow-brand {
+    box-shadow:
+      0 0 0 1px color-mix(in oklch, var(--brand) 40%, transparent),
+      0 0 24px -4px var(--brand-glow),
+      0 0 60px -16px var(--brand-ring);
+  }
+  .glow-brand-soft {
+    box-shadow:
+      0 0 0 1px color-mix(in oklch, var(--brand) 22%, transparent),
+      0 0 20px -6px var(--brand-ring);
+  }
+
+  /* Subtle inner highlight on top edge — makes glass panels feel 3D */
+  .edge-highlight {
+    box-shadow:
+      inset 0 1px 0 0 color-mix(in oklch, white 28%, transparent),
+      inset 0 -1px 0 0 rgba(0, 0, 0, 0.06);
+  }
+
+  /* Conic aurora background — clipped by parent overflow-hidden */
+  .aurora {
+    background:
+      conic-gradient(from 220deg at 30% 30%,
+        color-mix(in oklch, var(--brand) 60%, transparent) 0deg,
+        transparent 90deg,
+        color-mix(in oklch, oklch(0.7 0.18 230) 50%, transparent) 180deg,
+        transparent 270deg,
+        color-mix(in oklch, var(--brand) 60%, transparent) 360deg);
+    filter: blur(60px);
+    opacity: 0.55;
+  }
+  .dark .aurora { opacity: 0.45; }
+
+  /* "Trace" — animated dashed line that suggests the foxai mark in motion */
+  .trace-line {
+    background-image: linear-gradient(90deg,
+      transparent 0%,
+      var(--brand) 50%,
+      transparent 100%);
+    height: 1px;
+  }
+
+  /* Holographic gradient text — for hero headlines */
+  .text-holo {
+    background: linear-gradient(120deg,
+      var(--ink) 0%,
+      var(--brand) 45%,
+      color-mix(in oklch, var(--brand) 60%, oklch(0.7 0.18 230)) 65%,
+      var(--ink) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% 100%;
+    animation: holo-shift 8s ease-in-out infinite;
+  }
+  @keyframes holo-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50%      { background-position: 100% 50%; }
+  }
+
+  /* Reveal-in on scroll — simple, no JS dependency */
+  .reveal {
+    opacity: 0;
+    transform: translateY(16px);
+    animation: reveal-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .reveal-delay-1 { animation-delay: 80ms; }
+  .reveal-delay-2 { animation-delay: 160ms; }
+  .reveal-delay-3 { animation-delay: 240ms; }
+  .reveal-delay-4 { animation-delay: 320ms; }
+  @keyframes reveal-up {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Pulse dot for live tags */
+  .pulse-dot {
+    position: relative;
+  }
+  .pulse-dot::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 999px;
+    background: currentColor;
+    opacity: 0.5;
+    animation: pulse-ring 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  @keyframes pulse-ring {
+    0%   { transform: scale(0.8); opacity: 0.6; }
+    100% { transform: scale(1.8); opacity: 0;   }
+  }
+}
+
+/* ==========================================================================
+   Hide scrollbars on mobile (unchanged behaviour)
+   ========================================================================== */
+@media (max-width: 767px) {
+  html, body {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar { display: none; }
+}
+
+/* ==========================================================================
+   View Transitions API — theme switch animation
+   ========================================================================== */
+@keyframes slide-from-top {
+  from { clip-path: polygon(0 0, 100% 0, 100% 0, 0 0); }
+  to   { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+}
+@keyframes slide-from-bottom {
+  from { clip-path: polygon(0 100%, 100% 100%, 100% 100%, 0 100%); }
+  to   { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.6s;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  animation-fill-mode: both;
+}
+::view-transition-old(root) { animation: none; }
+html.dark::view-transition-new(root)        { animation-name: slide-from-top; }
+html:not(.dark)::view-transition-new(root)  { animation-name: slide-from-bottom; }
+
+/* Player fills */
+div[data-media-provider] video {
+  height: 100%;
+  object-fit: contain;
+}
+.art-poster {
+  background-size: contain !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  background-color: #000 !important;
+}
+@media (max-width: 768px) {
+  .art-control-pip,
+  .art-control-fullscreenWeb,
+  .art-control-volume { display: none !important; }
+}
+
+/* Legacy ripple/badge animations — kept for components that reference them */
+@keyframes ping-scale {
+  0%   { transform: scale(1);   opacity: 0.6; }
+  75%, 100% { transform: scale(2); opacity: 0; }
+}
+@keyframes pulse-scale {
+  0%, 100% { transform: scale(1);    opacity: 0.4; }
+  50%      { transform: scale(1.15); opacity: 0.2; }
+}
+@keyframes badge-scale {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); }
+}
+
+/* Reduced motion — respect the OS preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

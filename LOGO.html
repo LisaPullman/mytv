@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>foxai LOGO — Implementation Spec</title>
+<style>
+  /* Self-contained. No external assets. Inline SVG previews render exactly
+     the way the logo renders in the foxai client; the CSS exists only so a
+     human (or a robot) can preview this file in a browser without installing
+     anything. The brand tokens below are the single source of truth — every
+     recipe in this document derives from them. */
+  :root {
+    --brand: #E2571F;          /* Ember (light) */
+    --brand-foreground: #FFFFFF;
+    --brand-muted: rgba(226, 87, 31, 0.12);
+    --ink: oklch(0.205 0 0);
+    --ink-soft: oklch(0.45 0 0);
+    --line: oklch(0.9 0 0);
+    --surface: oklch(0.99 0 0);
+    --surface-2: oklch(0.965 0 0);
+    --code-bg: oklch(0.18 0 0);
+    --code-fg: oklch(0.95 0 0);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --brand: #FF7A4D;        /* Ember (dark, lifted) */
+      --brand-foreground: #1a1a1a;
+      --brand-muted: rgba(255, 122, 77, 0.16);
+      --ink: oklch(0.96 0 0);
+      --ink-soft: oklch(0.7 0 0);
+      --line: oklch(0.28 0 0);
+      --surface: oklch(0.16 0 0);
+      --surface-2: oklch(0.22 0 0);
+      --code-bg: oklch(0.10 0 0);
+      --code-fg: oklch(0.95 0 0);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    color: var(--ink);
+    background: var(--surface);
+    line-height: 1.55;
+    font-size: 15px;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 56px 28px 96px; }
+  h1 { font-size: 28px; letter-spacing: -0.02em; margin: 0 0 4px; }
+  h1 .mark { display: inline-block; vertical-align: -4px; margin-right: 10px; }
+  .lede { color: var(--ink-soft); margin: 0 0 32px; max-width: 60ch; }
+  h2 {
+    font-size: 18px; letter-spacing: -0.01em; margin: 40px 0 12px;
+    padding-top: 28px; border-top: 1px solid var(--line);
+  }
+  h3 { font-size: 15px; margin: 24px 0 8px; }
+  p { margin: 0 0 12px; }
+  code, pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+  code.inline {
+    background: var(--surface-2); color: var(--ink); padding: 1px 6px; border-radius: 5px;
+    font-size: 0.9em;
+  }
+  pre {
+    background: var(--code-bg); color: var(--code-fg); padding: 16px 18px;
+    border-radius: 10px; overflow-x: auto; font-size: 12.5px; line-height: 1.6;
+    margin: 8px 0 18px;
+  }
+  pre code { white-space: pre; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 16px; font-size: 13.5px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--ink-soft); }
+  .swatch {
+    display: inline-block; width: 18px; height: 18px; border-radius: 4px;
+    margin-right: 6px; vertical-align: -4px;
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+  .preview {
+    display: flex; gap: 18px; align-items: center; flex-wrap: wrap;
+    padding: 18px; border-radius: 12px; background: var(--surface-2);
+    margin: 8px 0 16px; border: 1px solid var(--line);
+  }
+  .preview.dark { background: oklch(0.18 0 0); border-color: transparent; color: #fff; }
+  .preview .stack { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+  .preview .stack > span { font-size: 11px; color: var(--ink-soft); letter-spacing: 0.04em; text-transform: uppercase; }
+  .preview.dark .stack > span { color: rgba(255,255,255,0.6); }
+  ul { padding-left: 20px; }
+  li { margin-bottom: 6px; }
+  .rule { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; }
+  .rule .do { color: oklch(0.55 0.13 152); font-weight: 600; min-width: 28px; }
+  .rule .dont { color: oklch(0.55 0.18 25); font-weight: 600; min-width: 28px; }
+  footer { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--line); color: var(--ink-soft); font-size: 12.5px; }
+  .token-row { display: grid; grid-template-columns: 80px 1fr; gap: 8px 16px; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--line); font-size: 13px; }
+  .token-row:last-child { border-bottom: none; }
+  .token-row .name { font-family: ui-monospace, monospace; color: var(--ink-soft); }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 540px) { .grid-2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>
+    <svg class="mark" width="32" height="32" viewBox="0 0 64 64" aria-hidden="true">
+      <g fill="none" stroke="var(--brand)" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 55V22c0-7.2 5.8-13 13-13h2"/>
+        <path d="M12.5 31h21"/>
+      </g>
+      <circle cx="49" cy="9" r="5.5" fill="var(--brand)"/>
+    </svg>
+    foxai LOGO
+  </h1>
+  <p class="lede">
+    Self-contained, AI-readable implementation spec for the foxai logo. Read this file top-to-bottom and you have everything you need to redraw the mark in any stack: path data, color tokens, three variants, and copy-paste recipes for raw SVG, React, CSS, and Tailwind.
+  </p>
+  <p class="lede">
+    <strong>Brand:</strong> foxai &nbsp;·&nbsp; <strong>Tagline:</strong> One key. Every model. &nbsp;·&nbsp; <strong>Accent:</strong> Ember (#E2571F) &nbsp;·&nbsp; <strong>Mark name:</strong> Trace
+  </p>
+</header>
+
+<!-- ============================================================== -->
+<h2>1. The mark — “Trace”</h2>
+
+<p>
+  The foxai mark is a lowercase <code class="inline">f</code> whose crossbar trails off into a detached, filled dot. The metaphor is a request: the trunk is the spine, the bar is the call, and the dot is the endpoint it terminates at. The negative space between the bar and the trunk reads as the path the response takes back, but only on a second look — primary recognition is just “an f with a freckle.”
+</p>
+
+<div class="preview">
+  <div class="stack">
+    <svg width="24" height="24" viewBox="0 0 64 64" aria-label="Mark at 24px">
+      <g fill="none" stroke="var(--brand)" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 55V22c0-7.2 5.8-13 13-13h2"/>
+        <path d="M12.5 31h21"/>
+      </g>
+      <circle cx="49" cy="9" r="5.5" fill="var(--brand)"/>
+    </svg>
+    <span>24 px</span>
+  </div>
+  <div class="stack">
+    <svg width="40" height="40" viewBox="0 0 64 64" aria-label="Mark at 40px">
+      <g fill="none" stroke="var(--brand)" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 55V22c0-7.2 5.8-13 13-13h2"/>
+        <path d="M12.5 31h21"/>
+      </g>
+      <circle cx="49" cy="9" r="5.5" fill="var(--brand)"/>
+    </svg>
+    <span>40 px</span>
+  </div>
+  <div class="stack">
+    <svg width="72" height="72" viewBox="0 0 64 64" aria-label="Mark at 72px">
+      <g fill="none" stroke="var(--brand)" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 55V22c0-7.2 5.8-13 13-13h2"/>
+        <path d="M12.5 31h21"/>
+      </g>
+      <circle cx="49" cy="9" r="5.5" fill="var(--brand)"/>
+    </svg>
+    <span>72 px</span>
+  </div>
+</div>
+
+<h3>1.1 Path data (the entire mark)</h3>
+<pre><code>viewBox:        0 0 64 64
+stroke-width:   7.5
+stroke-linecap: round
+stroke-linejoin: round
+fill (paths):   none
+fill (dot):     var(--brand)
+
+&lt;path d="M23 55V22c0-7.2 5.8-13 13-13h2" /&gt;     &lt;-- spine + top hook
+&lt;path d="M12.5 31h21" /&gt;                          &lt;-- crossbar (the request)
+&lt;circle cx="49" cy="9" r="5.5" fill="var(--brand)" /&gt;  &lt;-- endpoint (filled)</code></pre>
+
+<p>
+  The viewBox is fixed at <code class="inline">0 0 64 64</code> for every variant — change the <code class="inline">width</code>/<code class="inline">height</code> attributes, never the viewBox. The 64-unit grid places stroke endpoints on integer (or half-integer) coordinates, which keeps the rendered glyph on subpixel grid lines at 16/24/32/48 px and stops it from going fuzzy on hidpi displays.
+</p>
+
+<h3>1.2 Sizing rules</h3>
+<ul>
+  <li><strong>≥ 20 px</strong>: use the bare <em>Mark</em> (strokes only). Strokes render cleanly down to about 18 px before they start to bleed together.</li>
+  <li><strong>≤ 24 px</strong>: switch to <em>Tile</em> (opaque background + reversed mark). A 7.5-unit stroke on a 24-px raster is roughly 2.8 px wide; on white page chrome it disappears.</li>
+  <li><strong>Wordmark pairings</strong>: lockup's mark height should be ≈ 1.7× the wordmark cap height. The component scales both together (see §2.3).</li>
+  <li><strong>Never</strong> render below 12 px. If a surface forces it, use a flat glyph, not the mark.</li>
+</ul>
+
+<!-- ============================================================== -->
+<h2>2. Variants</h2>
+
+<h3>2.1 Mark — the bare stroke</h3>
+<p>Use wherever the surrounding surface has enough contrast for an outlined mark (white cards, dark nav, the playground header). Strokes inherit color from <code class="inline">var(--brand)</code> by default — pass <code class="inline">stroke="currentColor"</code> in the SVG to inherit surrounding text instead.</p>
+
+<div class="preview">
+  <svg width="48" height="48" viewBox="0 0 64 64" aria-label="Mark">
+    <g fill="none" stroke="var(--brand)" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M23 55V22c0-7.2 5.8-13 13-13h2"/>
+      <path d="M12.5 31h21"/>
+    </g>
+    <circle cx="49" cy="9" r="5.5" fill="var(--brand)"/>
+  </svg>
+</div>
+
+<h3>2.2 Tile — opaque background, reversed mark</h3>
+<p>Use for favicons, app icons, anywhere the bare mark would dissolve. The tile is a rounded square (corner radius <code class="inline">14</code> on a 64-unit grid, ≈ 22% of the side) and the mark inside is recoloured to <code class="inline">var(--brand-foreground)</code> (white in light mode, near-black in dark mode).</p>
+
+<div class="preview">
+  <svg width="48" height="48" viewBox="0 0 64 64" aria-label="Tile">
+    <rect width="64" height="64" rx="14" fill="var(--brand)"/>
+    <g fill="none" stroke="var(--brand-foreground)" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M23 55V22c0-7.2 5.8-13 13-13h2"/>
+      <path d="M12.5 31h21"/>
+    </g>
+    <circle cx="49" cy="9" r="5.5" fill="var(--brand-foreground)"/>
+  </svg>
+  <svg width="48" height="48" viewBox="0 0 64 64" aria-label="Tile reversed">
+    <rect width="64" height="64" rx="14" fill="var(--brand-foreground)"/>
+    <g fill="none" stroke="var(--brand)" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M23 55V22c0-7.2 5.8-13 13-13h2"/>
+      <path d="M12.5 31h21"/>
+    </g>
+    <circle cx="49" cy="9" r="5.5" fill="var(--brand)"/>
+  </svg>
+</div>
+
+<h3>2.3 Lockup — Mark + wordmark</h3>
+<p>The default for navbars, auth cards, and "powered by" placements. The mark inherits the foreground colour so it sits calmly next to text; the wordmark is set in 600-weight with a tightened tracking (-0.01em), and the letters <code class="inline">ai</code> lift to brand colour so the accent lands in the type, not just the glyph.</p>
+
+<div class="preview">
+  <span style="display: inline-flex; align-items: center; gap: 8px;">
+    <svg width="28" height="28" viewBox="0 0 64 64" aria-label="foxai">
+      <g fill="none" stroke="currentColor" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 55V22c0-7.2 5.8-13 13-13h2"/>
+        <path d="M12.5 31h21"/>
+      </g>
+      <circle cx="49" cy="9" r="5.5" fill="currentColor"/>
+    </svg>
+    <span style="font-weight: 600; letter-spacing: -0.01em; font-size: 17px; line-height: 1;">
+      fox<span style="color: var(--brand);">ai</span>
+    </span>
+  </span>
+  <span style="display: inline-flex; align-items: center; gap: 8px; color: var(--ink-soft); font-size: 13px;">
+    <svg width="18" height="18" viewBox="0 0 64 64" aria-label="foxai">
+      <g fill="none" stroke="currentColor" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 55V22c0-7.2 5.8-13 13-13h2"/>
+        <path d="M12.5 31h21"/>
+      </g>
+      <circle cx="49" cy="9" r="5.5" fill="currentColor"/>
+    </svg>
+    <span style="font-weight: 600; letter-spacing: -0.01em; font-size: 12px; line-height: 1;">
+      fox<span style="color: var(--brand);">ai</span>
+    </span>
+    <span>small size uses the mark at ~14–16 px and the wordmark at ~10–11 px</span>
+  </span>
+</div>
+
+<!-- ============================================================== -->
+<h2>3. Color tokens</h2>
+
+<p>Three tokens, light + dark. Everything else (chart palette, focus rings, soft fills) is derived from <code class="inline">--brand</code>.</p>
+
+<div class="grid-2">
+  <div>
+    <h3>Light</h3>
+    <div class="token-row"><span class="swatch" style="background: #E2571F;"></span><span><span class="name">--brand</span> · <code class="inline">#E2571F</code> · <code class="inline">oklch(0.633 0.185 39.6)</code></span></div>
+    <div class="token-row"><span class="swatch" style="background: #FFFFFF; border-color: rgba(0,0,0,0.15);"></span><span><span class="name">--brand-foreground</span> · <code class="inline">#FFFFFF</code> · <code class="inline">oklch(0.99 0 0)</code></span></div>
+    <div class="token-row"><span class="swatch" style="background: rgba(226, 87, 31, 0.12);"></span><span><span class="name">--brand-muted</span> · <code class="inline">rgba(226, 87, 31, 0.12)</code></span></div>
+  </div>
+  <div>
+    <h3>Dark</h3>
+    <div class="token-row"><span class="swatch" style="background: #FF7A4D;"></span><span><span class="name">--brand</span> · <code class="inline">#FF7A4D</code> · <code class="inline">oklch(0.727 0.173 39)</code></span></div>
+    <div class="token-row"><span class="swatch" style="background: #1a1a1a;"></span><span><span class="name">--brand-foreground</span> · <code class="inline">#1A1A1A</code> · <code class="inline">oklch(0.16 0 0)</code></span></div>
+    <div class="token-row"><span class="swatch" style="background: rgba(255, 122, 77, 0.16);"></span><span><span class="name">--brand-muted</span> · <code class="inline">rgba(255, 122, 77, 0.16)</code></span></div>
+  </div>
+</div>
+
+<p>
+  The two Ember hues were chosen in OKLCH (not HSL) so the dark variant stays in the same perceived lightness class as the light variant — orange-on-white at 0.633 L flips to orange-on-black at 0.727 L and the saturation/chroma numbers barely move. Don't pick the dark variant by eye; the hue hovers at 39° in both modes.
+</p>
+
+<!-- ============================================================== -->
+<h2>4. Recipes</h2>
+
+<h3>4.1 Raw SVG (drop-in, no framework)</h3>
+<pre><code>&lt;!-- Mark --&gt;
+&lt;svg width="32" height="32" viewBox="0 0 64 64" role="img" aria-label="foxai"&gt;
+  &lt;g fill="none" stroke="#E2571F" stroke-width="7.5"
+     stroke-linecap="round" stroke-linejoin="round"&gt;
+    &lt;path d="M23 55V22c0-7.2 5.8-13 13-13h2"/&gt;
+    &lt;path d="M12.5 31h21"/&gt;
+  &lt;/g&gt;
+  &lt;circle cx="49" cy="9" r="5.5" fill="#E2571F"/&gt;
+&lt;/svg&gt;
+
+&lt;!-- Tile (favicon, app icon) --&gt;
+&lt;svg width="32" height="32" viewBox="0 0 64 64" role="img" aria-label="foxai"&gt;
+  &lt;rect width="64" height="64" rx="14" fill="#E2571F"/&gt;
+  &lt;g fill="none" stroke="#FFFFFF" stroke-width="7.5"
+     stroke-linecap="round" stroke-linejoin="round"&gt;
+    &lt;path d="M23 55V22c0-7.2 5.8-13 13-13h2"/&gt;
+    &lt;path d="M12.5 31h21"/&gt;
+  &lt;/g&gt;
+  &lt;circle cx="49" cy="9" r="5.5" fill="#FFFFFF"/&gt;
+&lt;/svg&gt;</code></pre>
+
+<h3>4.2 React / JSX component</h3>
+<pre><code>import type { SVGProps } from 'react'
+
+// MARK_PATHS — the spine, the crossbar, and the endpoint.
+const MARK_PATHS = (
+  &lt;g
+    fill="none"
+    stroke="var(--brand, #E2571F)"
+    strokeWidth={7.5}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  &gt;
+    &lt;path d="M23 55V22c0-7.2 5.8-13 13-13h2" /&gt;
+    &lt;path d="M12.5 31h21" /&gt;
+    &lt;circle cx="49" cy="9" r="5.5" fill="var(--brand, #E2571F)" stroke="none" /&gt;
+  &lt;/g&gt;
+)
+
+type LogoProps = SVGProps&lt;SVGSVGElement&gt; &amp; {
+  size?: number
+  title?: string
+}
+
+/** Bare stroke mark — for surfaces with enough contrast for an outline. */
+export function Mark({ size = 24, title, ...rest }: LogoProps) {
+  return (
+    &lt;svg width={size} height={size} viewBox="0 0 64 64"
+         role={title ? 'img' : 'presentation'}
+         aria-label={title} aria-hidden={title ? undefined : true}
+         {...rest}&gt;
+      {title ? &lt;title&gt;{title}&lt;/title&gt; : null}
+      {MARK_PATHS}
+    &lt;/svg&gt;
+  )
+}
+
+/** Opaque tile with reversed mark — for favicons, app icons, ≤ 24 px. */
+export function Tile({ size = 24, title, ...rest }: LogoProps) {
+  return (
+    &lt;svg width={size} height={size} viewBox="0 0 64 64"
+         role={title ? 'img' : 'presentation'}
+         aria-label={title} aria-hidden={title ? undefined : true}
+         {...rest}&gt;
+      {title ? &lt;title&gt;{title}&lt;/title&gt; : null}
+      &lt;rect width="64" height="64" rx="14" fill="var(--brand, #E2571F)" /&gt;
+      {MARK_PATHS}
+    &lt;/svg&gt;
+  )
+}
+
+/** Mark + "foxai" wordmark, where "ai" picks up the brand accent. */
+export function Lockup({
+  size = 24,
+  title,
+  className,
+  ...rest
+}: Omit&lt;LogoProps, 'size'&gt; &amp; { size?: number }) {
+  return (
+    &lt;span className={className}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}&gt;
+      &lt;Mark size={size} title={title} {...rest} /&gt;
+      &lt;span style={{
+        fontWeight: 600,
+        letterSpacing: '-0.01em',
+        fontSize: Math.round(size * 0.6),
+        lineHeight: 1,
+      }}&gt;
+        fox&lt;span style={{ color: 'var(--brand, #E2571F)' }}&gt;ai&lt;/span&gt;
+      &lt;/span&gt;
+    &lt;/span&gt;
+  )
+}</code></pre>
+
+<h3>4.3 CSS variables + utility classes</h3>
+<pre><code>:root {
+  --brand: #E2571F;
+  --brand-foreground: #FFFFFF;
+  --brand-muted: rgba(226, 87, 31, 0.12);
+}
+:root.dark {
+  --brand: #FF7A4D;
+  --brand-foreground: #1A1A1A;
+  --brand-muted: rgba(255, 122, 77, 0.16);
+}
+
+/* Apply to <Lockup /> spans: */
+.foxai-lockup { display: inline-flex; align-items: center; gap: 8px; }
+.foxai-lockup .ai { color: var(--brand); }
+.foxai-lockup .word { font-weight: 600; letter-spacing: -0.01em; line-height: 1; }</code></pre>
+
+<h3>4.4 Tailwind v4 tokens</h3>
+<pre><code>/* tailwind.css — declare the brand once, expose as utilities */
+@theme inline {
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-muted: var(--brand-muted);
+}
+
+/* Now you can use:
+     class="text-brand"            &lt;-- the Ember accent
+     class="bg-brand text-brand-foreground"   &lt;-- brand button
+     class="bg-[var(--brand-muted)]"          &lt;-- soft tint
+*/</code></pre>
+
+<!-- ============================================================== -->
+<h2>5. Usage rules</h2>
+
+<div class="rule"><span class="do">DO</span><span>Use the lockup at navbar/auth-card sizes (16–32 px mark, 10–22 px wordmark).</span></div>
+<div class="rule"><span class="do">DO</span><span>Use the tile wherever the bare mark would disappear (favicons, OS-tray, anything ≤ 24 px).</span></div>
+<div class="rule"><span class="do">DO</span><span>Recolour the endpoint dot together with the strokes; never the strokes alone.</span></div>
+<div class="rule"><span class="do">DO</span><span>Keep a clear-space of at least one cap-height around the mark on every side.</span></div>
+
+<div class="rule"><span class="dont">DON'T</span><span>Don't recolour the strokes and the dot independently — they're one shape.</span></div>
+<div class="rule"><span class="dont">DON'T</span><span>Don't outline the tile or drop-shadow the mark.</span></div>
+<div class="rule"><span class="dont">DON'T</span><span>Don't rotate, skew, or stretch the viewBox.</span></div>
+<div class="rule"><span class="dont">DON'T</span><span>Don't set the dot to a different colour from the strokes.</span></div>
+
+<!-- ============================================================== -->
+<h2>6. Design rationale (why it looks like this)</h2>
+
+<ul>
+  <li><strong>Lowercase f, not capital F.</strong> Lowercase feels like infrastructure, like a function call. Capital F feels like a nameplate; lowercase feels like a utility.</li>
+  <li><strong>The crossbar that doesn't quite reach.</strong> The bar starts at x=12.5 (left of the spine at x=23) and stops at x=33.5 (right of the spine). The asymmetry — sticking out left, tucked in right — is what gives the mark direction. A symmetrical bar reads as a tic-tac-toe grid.</li>
+  <li><strong>The detached endpoint.</strong> Most f-marks finish the bar with a serif or a curl. We replace that with a separated dot. This is the only filled shape in the mark and it's what carries the metaphor: a request leaves the bar, travels through empty space, and arrives at a node. Functionally, the dot is also what keeps the mark readable at 16 px — without it, the f looks like a t.</li>
+  <li><strong>Stroke width 7.5 on a 64-unit grid.</strong> 7.5 is the largest stroke that doesn't visually crowd the crossbar or eat the hook. Below 6 and the mark feels thin; above 9 and the negative space between bar and spine closes.</li>
+  <li><strong>Corner radius 14 on the tile.</strong> 14/64 = 0.22, which sits between iOS (≈ 0.22) and Material (≈ 0.125). It reads as friendly without looking rounded.</li>
+  <li><strong>"ai" gets the brand colour, "fox" stays neutral.</strong> The accent is the suffix, the value-neutral part stays black. This is deliberate: it's the brand saying "the AI is the accent, the fox is the carrier."</li>
+</ul>
+
+<!-- ============================================================== -->
+<h2>7. File map (where it lives in foxai)</h2>
+
+<table>
+  <tr><th>File</th><th>What it contains</th></tr>
+  <tr><td><code class="inline">client/src/brand/logo.tsx</code></td><td>The <code class="inline">Mark</code>, <code class="inline">Tile</code>, and <code class="inline">Lockup</code> React components.</td></tr>
+  <tr><td><code class="inline">client/src/brand/brand.css</code></td><td>The <code class="inline">--brand</code>, <code class="inline">--brand-foreground</code>, <code class="inline">--brand-muted</code> tokens (light + dark).</td></tr>
+  <tr><td><code class="inline">client/public/favicon.svg</code></td><td>The static tile used as the browser favicon.</td></tr>
+  <tr><td><code class="inline">client/index.html</code></td><td>The <code class="inline">&lt;title&gt;</code> "foxai · Unified LLM Router" references the lockup copy.</td></tr>
+</table>
+
+<p>
+  When porting into another project, copy §1 (paths), §3 (tokens), and one of the recipes in §4. Everything else is foxai-specific.
+</p>
+
+<footer>
+  Last revised 2026-08-30 · foxai brand layer
+</footer>
+
+</div>
+</body>
+</html>
