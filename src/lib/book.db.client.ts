@@ -18,6 +18,25 @@ function trimRecords(records: Record<string, BookReadRecord>) {
   return Object.fromEntries(entries.sort(([, a], [, b]) => b.saveTime - a.saveTime).slice(0, MAX_BOOK_HISTORY));
 }
 
+function readBookHistoryCache(): Record<string, BookReadRecord> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(BOOK_HISTORY_KEY);
+    return raw ? (JSON.parse(raw) as Record<string, BookReadRecord>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeBookHistoryCache(records: Record<string, BookReadRecord>) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(BOOK_HISTORY_KEY, JSON.stringify(trimRecords(records)));
+}
+
+export function getCachedBookReadRecordsSnapshot(): Record<string, BookReadRecord> {
+  return readBookHistoryCache();
+}
+
 export async function getAllBookShelf(): Promise<Record<string, BookShelfItem>> {
   if (typeof window === 'undefined') return {};
   if (isRemoteStorage()) {
@@ -56,15 +75,32 @@ export async function deleteBookShelf(sourceId: string, bookId: string): Promise
 export async function getAllBookReadRecords(): Promise<Record<string, BookReadRecord>> {
   if (typeof window === 'undefined') return {};
   if (isRemoteStorage()) {
-    return (await (await fetchWithAuth('/api/books/history')).json()) as Record<string, BookReadRecord>;
+    const cachedData = readBookHistoryCache();
+    if (Object.keys(cachedData).length > 0) {
+      fetchWithAuth('/api/books/history')
+        .then((response) => response.json() as Promise<Record<string, BookReadRecord>>)
+        .then((freshData) => {
+          writeBookHistoryCache(freshData);
+          window.dispatchEvent(new CustomEvent('bookHistoryUpdated', { detail: freshData }));
+        })
+        .catch(() => undefined);
+      return cachedData;
+    }
+
+    const freshData = (await (await fetchWithAuth('/api/books/history')).json()) as Record<string, BookReadRecord>;
+    writeBookHistoryCache(freshData);
+    return freshData;
   }
-  const raw = localStorage.getItem(BOOK_HISTORY_KEY);
-  return raw ? (JSON.parse(raw) as Record<string, BookReadRecord>) : {};
+  return readBookHistoryCache();
 }
 
 export async function saveBookReadRecord(sourceId: string, bookId: string, record: BookReadRecord): Promise<void> {
   const key = generateStorageKey(sourceId, bookId);
   if (isRemoteStorage()) {
+    const cached = readBookHistoryCache();
+    cached[key] = record;
+    writeBookHistoryCache(cached);
+    window.dispatchEvent(new CustomEvent('bookHistoryUpdated', { detail: trimRecords(cached) }));
     await fetchWithAuth('/api/books/history', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -74,16 +110,20 @@ export async function saveBookReadRecord(sourceId: string, bookId: string, recor
   }
   const data = await getAllBookReadRecords();
   data[key] = record;
-  localStorage.setItem(BOOK_HISTORY_KEY, JSON.stringify(trimRecords(data)));
+  writeBookHistoryCache(data);
 }
 
 export async function deleteBookReadRecord(sourceId: string, bookId: string): Promise<void> {
   const key = generateStorageKey(sourceId, bookId);
   if (isRemoteStorage()) {
+    const cached = readBookHistoryCache();
+    delete cached[key];
+    writeBookHistoryCache(cached);
+    window.dispatchEvent(new CustomEvent('bookHistoryUpdated', { detail: cached }));
     await fetchWithAuth(`/api/books/history?key=${encodeURIComponent(key)}`, { method: 'DELETE' });
     return;
   }
   const data = await getAllBookReadRecords();
   delete data[key];
-  localStorage.setItem(BOOK_HISTORY_KEY, JSON.stringify(data));
+  writeBookHistoryCache(data);
 }

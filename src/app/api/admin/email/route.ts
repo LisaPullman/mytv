@@ -6,10 +6,6 @@ import { getConfig } from '@/lib/config';
 import { getStorage } from '@/lib/db';
 import { EmailService } from '@/lib/email.service';
 
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
-
-
 export const runtime = 'nodejs';
 
 /**

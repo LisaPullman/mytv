@@ -19,7 +19,6 @@ const config: Config = {
         primary: ['Inter', ...defaultTheme.fontFamily.sans],
       },
       colors: {
-        // Existing primary palette (kept for backwards compatibility)
         primary: {
           50: '#f0f9ff',
           100: '#e0f2fe',
@@ -33,26 +32,6 @@ const config: Config = {
           900: '#0c4a6e',
         },
         dark: '#222222',
-
-        // foxai Ember — derived from the LOGO.html token spec.
-        // In light mode it's a punchy orange; in dark mode it lifts to a
-        // warmer hue at the same perceived lightness.
-        brand: {
-          DEFAULT: 'var(--brand)',
-          foreground: 'var(--brand-foreground)',
-          muted: 'var(--brand-muted)',
-          ring: 'var(--brand-ring)',
-          glow: 'var(--brand-glow)',
-        },
-        ink: {
-          DEFAULT: 'var(--ink)',
-          soft: 'var(--ink-soft)',
-        },
-        line: 'var(--line)',
-        surface: {
-          DEFAULT: 'var(--surface)',
-          2: 'var(--surface-2)',
-        },
       },
       keyframes: {
         flicker: {
@@ -67,8 +46,12 @@ const config: Config = {
           },
         },
         shimmer: {
-          '0%': { backgroundPosition: '-700px 0' },
-          '100%': { backgroundPosition: '700px 0' },
+          '0%': {
+            backgroundPosition: '-700px 0',
+          },
+          '100%': {
+            backgroundPosition: '700px 0',
+          },
         },
         fadeIn: {
           '0%': { opacity: '0' },
@@ -86,21 +69,6 @@ const config: Config = {
           '0%': { transform: 'translateX(100%)', opacity: '0' },
           '100%': { transform: 'translateX(0)', opacity: '1' },
         },
-        // foxai-specific: slow rotation for the aurora mesh, drift for
-        // floating elements, and a "trace" stroke that follows the mark.
-        auroraSpin: {
-          '0%':   { transform: 'rotate(0deg) scale(1)' },
-          '50%':  { transform: 'rotate(180deg) scale(1.08)' },
-          '100%': { transform: 'rotate(360deg) scale(1)' },
-        },
-        drift: {
-          '0%, 100%': { transform: 'translateY(0) translateX(0)' },
-          '50%':      { transform: 'translateY(-8px) translateX(4px)' },
-        },
-        trace: {
-          '0%':   { strokeDashoffset: '60' },
-          '100%': { strokeDashoffset: '0' },
-        },
       },
       animation: {
         flicker: 'flicker 3s linear infinite',
@@ -109,9 +77,6 @@ const config: Config = {
         'slide-up': 'slideUp 0.3s ease-in-out',
         'slide-down': 'slideDown 0.3s ease-in-out',
         'slide-in-from-right': 'slideInFromRight 0.3s ease-out',
-        'aurora-spin': 'auroraSpin 24s linear infinite',
-        drift: 'drift 6s ease-in-out infinite',
-        trace: 'trace 1.6s ease-out forwards',
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

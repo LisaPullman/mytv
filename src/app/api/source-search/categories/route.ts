@@ -4,10 +4,6 @@ import { getAuthInfoFromCookie } from '@/lib/auth';
 import { API_CONFIG, getAvailableApiSites, getConfig } from '@/lib/config';
 import { yellowWords } from '@/lib/yellow';
 
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
-
-
 export const runtime = 'nodejs';
 
 interface CmsClassResponse {
@@ -28,6 +24,7 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const sourceKey = searchParams.get('source');
+  const includeSpecialSources = searchParams.get('special') === '1';
 
   if (!sourceKey) {
     return NextResponse.json(
@@ -38,7 +35,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const config = await getConfig();
-    const apiSites = await getAvailableApiSites(authInfo.username);
+    const apiSites = await getAvailableApiSites(authInfo.username, includeSpecialSources);
     const targetSite = apiSites.find((site) => site.key === sourceKey);
 
     if (!targetSite) {

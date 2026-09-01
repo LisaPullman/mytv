@@ -3,10 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { isMusicSource, lxGetJson, unwrapLxArray } from '@/lib/music-v2';
 import { badRequest, internalError } from '@/lib/music-v2-api';
 
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
-
-
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {

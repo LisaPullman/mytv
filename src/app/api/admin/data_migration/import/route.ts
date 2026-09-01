@@ -10,10 +10,6 @@ import { SimpleCrypto } from '@/lib/crypto';
 import { db } from '@/lib/db';
 import { updateProgress, clearProgress } from '@/lib/data-migration-progress';
 
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
-
-
 export const runtime = 'nodejs';
 
 const gunzipAsync = promisify(gunzip);
@@ -184,8 +180,8 @@ export async function POST(req: NextRequest) {
             const createdAt = userV2?.created_at || Date.now();
 
             // 根据存储类型使用不同的导入方法
-            if (storageType === 'd1') {
-              // D1 存储：使用 createUserWithHashedPassword 方法
+            if (storageType === 'd1' || storageType === 'turso') {
+              // D1/Turso 存储：使用 createUserWithHashedPassword 方法
               if (typeof storage.createUserWithHashedPassword === 'function') {
                 await storage.createUserWithHashedPassword(
                   username,
@@ -197,9 +193,9 @@ export async function POST(req: NextRequest) {
                   userV2?.enabledApis,
                   userV2?.banned
                 );
-                console.log(`用户 ${username} 导入成功 (D1)`);
+                console.log(`用户 ${username} 导入成功 (${storageType})`);
               } else {
-                console.error(`D1 storage 缺少 createUserWithHashedPassword 方法`);
+                console.error(`${storageType} storage 缺少 createUserWithHashedPassword 方法`);
                 return false;
               }
             } else if (storageType === 'postgres') {

@@ -27,62 +27,46 @@ const SidebarContext = createContext<SidebarContextType>({
 
 export const useSidebar = () => useContext(SidebarContext);
 
-// f.foxai lockup — foxai "Trace" mark + middle-dot + wordmark, with the
-// "ai" suffix in the brand accent. The wrapper chip adds the soft brand
-// glow so the brand reads at every sidebar width.
+// foxai lockup — "Trace" mark (currentColor) + "foxai" wordmark where the
+// "ai" suffix picks up the brand accent. Per LOGO.html §2.3: no chip, no
+// outline, mark inherits the wordmark ink so it sits calmly beside text.
 const Logo = () => {
   const { siteName } = useSite();
   return (
     <Link
       href='/'
-      className='group flex items-center gap-2.5 h-16 px-4 select-none'
-      aria-label={siteName || 'f.foxai'}
+      className='group flex items-center gap-2 h-16 px-4 select-none'
+      style={{ color: 'var(--ink)' }}
+      aria-label={siteName || 'foxai'}
     >
-      <span
-        className='relative inline-flex items-center justify-center rounded-xl p-1.5 glow-brand-soft transition-transform duration-300 group-hover:scale-105'
-        style={{
-          background:
-            'linear-gradient(135deg, color-mix(in oklch, var(--brand) 18%, transparent), color-mix(in oklch, var(--brand) 4%, transparent))',
-          border: '1px solid color-mix(in oklch, var(--brand) 28%, transparent)',
-        }}
+      <svg
+        width='26'
+        height='26'
+        viewBox='0 0 64 64'
+        aria-hidden='true'
+        className='transition-transform duration-300 group-hover:scale-105'
       >
-        <svg
-          width='22'
-          height='22'
-          viewBox='0 0 64 64'
-          aria-hidden='true'
-          className='text-[color:var(--brand)]'
+        <g
+          fill='none'
+          stroke='currentColor'
+          strokeWidth={7.5}
+          strokeLinecap='round'
+          strokeLinejoin='round'
         >
-          <g
-            fill='none'
-            stroke='currentColor'
-            strokeWidth={7.5}
-            strokeLinecap='round'
-            strokeLinejoin='round'
-          >
-            <path d='M23 55V22c0-7.2 5.8-13 13-13h2' />
-            <path d='M12.5 31h21' />
-          </g>
-          <circle cx='49' cy='9' r='5.5' fill='currentColor' />
-        </svg>
-      </span>
+          <path d='M23 55V22c0-7.2 5.8-13 13-13h2' />
+          <path d='M12.5 31h21' />
+        </g>
+        <circle cx='49' cy='9' r='5.5' fill='currentColor' />
+      </svg>
       <span
-        className='inline-flex items-baseline gap-1 text-[19px] font-semibold tracking-tight'
         style={{
+          fontWeight: 600,
           letterSpacing: '-0.01em',
-          color: 'var(--ink)',
+          fontSize: 16,
+          lineHeight: 1,
         }}
       >
-        <span>f</span>
-        <span
-          aria-hidden='true'
-          className='text-[color:var(--ink-soft)] font-light'
-        >
-          .
-        </span>
-        <span>
-          fox<span style={{ color: 'var(--brand)' }}>ai</span>
-        </span>
+        fox<span style={{ color: 'var(--brand)' }}>ai</span>
       </span>
     </Link>
   );
@@ -325,11 +309,11 @@ const Sidebar = ({ onToggle, activePath = '/' }: SidebarProps) => {
                   e.currentTarget.blur();
                 }}
                 data-active={active === '/'}
-                className={`group flex items-center rounded-lg px-2 py-2 pl-4 text-gray-700 hover:bg-gray-100/30 hover:text-green-600 data-[active=true]:bg-green-500/20 data-[active=true]:text-green-700 font-medium transition-colors duration-200 min-h-[40px] dark:text-gray-300 dark:hover:text-green-400 dark:data-[active=true]:bg-green-500/10 dark:data-[active=true]:text-green-400 ${isCollapsed ? 'w-full max-w-none mx-0' : 'mx-0'
+                className={`group flex items-center rounded-lg px-2 py-2 pl-4 text-gray-700 hover:bg-gray-100/30 hover:text-[color:var(--brand)] data-[active=true]:bg-[color:var(--brand-muted)] data-[active=true]:text-[color:var(--brand)] font-medium transition-colors duration-200 min-h-[40px] dark:text-gray-300 dark:hover:text-[color:var(--brand)] dark:data-[active=true]:bg-[color:var(--brand-muted)] dark:data-[active=true]:text-[color:var(--brand)] ${isCollapsed ? 'w-full max-w-none mx-0' : 'mx-0'
                   } gap-3 justify-start`}
               >
                 <div className='w-4 h-4 flex items-center justify-center'>
-                  <Home className='h-4 w-4 text-gray-500 group-hover:text-green-600 data-[active=true]:text-green-700 dark:text-gray-400 dark:group-hover:text-green-400 dark:data-[active=true]:text-green-400' />
+                  <Home className='h-4 w-4 text-gray-500 group-hover:text-[color:var(--brand)] data-[active=true]:text-[color:var(--brand)] dark:text-gray-400 dark:group-hover:text-green-400 dark:data-[active=true]:text-[color:var(--brand)]' />
                 </div>
                 {!isCollapsed && (
                   <span className='whitespace-nowrap transition-opacity duration-200 opacity-100'>
@@ -340,11 +324,11 @@ const Sidebar = ({ onToggle, activePath = '/' }: SidebarProps) => {
               <Link
                 href='/search'
                 data-active={active === '/search'}
-                className={`group flex items-center rounded-lg px-2 py-2 pl-4 text-gray-700 hover:bg-gray-100/30 hover:text-green-600 data-[active=true]:bg-green-500/20 data-[active=true]:text-green-700 font-medium transition-colors duration-200 min-h-[40px] dark:text-gray-300 dark:hover:text-green-400 dark:data-[active=true]:bg-green-500/10 dark:data-[active=true]:text-green-400 ${isCollapsed ? 'w-full max-w-none mx-0' : 'mx-0'
+                className={`group flex items-center rounded-lg px-2 py-2 pl-4 text-gray-700 hover:bg-gray-100/30 hover:text-[color:var(--brand)] data-[active=true]:bg-[color:var(--brand-muted)] data-[active=true]:text-[color:var(--brand)] font-medium transition-colors duration-200 min-h-[40px] dark:text-gray-300 dark:hover:text-[color:var(--brand)] dark:data-[active=true]:bg-[color:var(--brand-muted)] dark:data-[active=true]:text-[color:var(--brand)] ${isCollapsed ? 'w-full max-w-none mx-0' : 'mx-0'
                   } gap-3 justify-start`}
               >
                 <div className='w-4 h-4 flex items-center justify-center'>
-                  <Search className='h-4 w-4 text-gray-500 group-hover:text-green-600 data-[active=true]:text-green-700 dark:text-gray-400 dark:group-hover:text-green-400 dark:data-[active=true]:text-green-400' />
+                  <Search className='h-4 w-4 text-gray-500 group-hover:text-[color:var(--brand)] data-[active=true]:text-[color:var(--brand)] dark:text-gray-400 dark:group-hover:text-green-400 dark:data-[active=true]:text-[color:var(--brand)]' />
                 </div>
                 {!isCollapsed && (
                   <span className='whitespace-nowrap transition-opacity duration-200 opacity-100'>
@@ -381,11 +365,11 @@ const Sidebar = ({ onToggle, activePath = '/' }: SidebarProps) => {
                       key={item.label}
                       href={item.href}
                       data-active={isActive}
-                      className={`group flex items-center rounded-lg px-2 py-2 pl-4 text-sm text-gray-700 hover:bg-gray-100/30 hover:text-green-600 data-[active=true]:bg-green-500/20 data-[active=true]:text-green-700 transition-colors duration-200 min-h-[40px] dark:text-gray-300 dark:hover:text-green-400 dark:data-[active=true]:bg-green-500/10 dark:data-[active=true]:text-green-400 ${isCollapsed ? 'w-full max-w-none mx-0' : 'mx-0'
+                      className={`group flex items-center rounded-lg px-2 py-2 pl-4 text-sm text-gray-700 hover:bg-gray-100/30 hover:text-[color:var(--brand)] data-[active=true]:bg-[color:var(--brand-muted)] data-[active=true]:text-[color:var(--brand)] transition-colors duration-200 min-h-[40px] dark:text-gray-300 dark:hover:text-[color:var(--brand)] dark:data-[active=true]:bg-[color:var(--brand-muted)] dark:data-[active=true]:text-[color:var(--brand)] ${isCollapsed ? 'w-full max-w-none mx-0' : 'mx-0'
                         } gap-3 justify-start`}
                     >
                       <div className='w-4 h-4 flex items-center justify-center'>
-                        <Icon className='h-4 w-4 text-gray-500 group-hover:text-green-600 data-[active=true]:text-green-700 dark:text-gray-400 dark:group-hover:text-green-400 dark:data-[active=true]:text-green-400' />
+                        <Icon className='h-4 w-4 text-gray-500 group-hover:text-[color:var(--brand)] data-[active=true]:text-[color:var(--brand)] dark:text-gray-400 dark:group-hover:text-green-400 dark:data-[active=true]:text-[color:var(--brand)]' />
                       </div>
                       {!isCollapsed && (
                         <span className='whitespace-nowrap transition-opacity duration-200 opacity-100'>

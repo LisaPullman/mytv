@@ -6,16 +6,13 @@ import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getAvailableApiSites, getCacheTime, getConfig } from '@/lib/config';
 import { getDetailFromApiV2 } from '@/lib/downstream';
 import { getProxyToken } from '@/lib/emby-token';
+import { hasFeaturePermission } from '@/lib/permissions';
 import {
   createBaiduNetdiskSession,
   getBaiduNetdiskSession,
   parseBaiduNetdiskId,
   refreshBaiduNetdiskSession,
 } from '@/lib/netdisk/baidu-session-cache';
-
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
-
 import {
   createMobileNetdiskSession,
   getMobileNetdiskSession,
@@ -49,6 +46,7 @@ import {
   NETDISK_QUARK_SOURCE,
   NETDISK_TIANYI_SOURCE,
   NETDISK_UC_SOURCE,
+  isNetdiskSource,
   normalizeNetdiskSource,
 } from '@/lib/netdisk/source';
 import {
@@ -72,28 +70,97 @@ import {
 
 export const runtime = 'nodejs';
 
-function formatNetdiskEpisodeTitle(parsed: {
-  season?: number;
-  episode?: number;
-}, fallback: string) {
-  if (parsed.season && parsed.episode) {
-    const season = String(Math.trunc(parsed.season)).padStart(2, '0');
-    const episodeValue = parsed.episode;
-    const episode =
-      Number.isInteger(episodeValue)
-        ? String(Math.trunc(episodeValue)).padStart(2, '0')
-        : String(episodeValue);
-    return `S${season}E${episode}`;
+/**
+ * 解析站点 origin。
+ * 优先级：SITE_BASE（站点 url 环境变量）> NEXT_PUBLIC_SITE_URL > 请求头 Host。
+ */
+function getRequestSiteOrigin(request: NextRequest): string {
+  const fromEnv =
+    (process.env.SITE_BASE || '').trim() ||
+    (process.env.NEXT_PUBLIC_SITE_URL || '').trim();
+
+  if (fromEnv) {
+    return fromEnv.replace(/\/$/, '');
   }
 
-  if (parsed.episode) {
-    const episodeValue = parsed.episode;
-    return Number.isInteger(episodeValue)
-      ? `第${Math.trunc(episodeValue)}集`
-      : `第${episodeValue}集`;
+  let host =
+    request.headers.get('host') || request.headers.get('x-forwarded-host');
+
+  if (host && !/^[a-zA-Z0-9.-]+(:\d+)?$/.test(host)) {
+    host = null;
   }
 
-  return fallback;
+  if (!host) {
+    try {
+      host = new URL(request.url).host;
+    } catch {
+      host = 'localhost';
+    }
+  }
+
+  const proto =
+    request.headers.get('x-forwarded-proto') ||
+    (host.includes('localhost') || host.includes('127.0.0.1')
+      ? 'http'
+      : 'https');
+
+  return `${proto}://${host}`.replace(/\/$/, '');
+}
+
+/**
+ * MoonTVPlus APP / OrionTV 客户端：对配置的视频源 m3u8 套一层去广告代理。
+ * UA 小写包含 "moontvplus app" 或 "oriontv" 时生效（不匹配仅含 moontvplus 的其它客户端）。
+ */
+function applyClientAdProxyToEpisodes(
+  request: NextRequest,
+  sourceCode: string,
+  episodes: string[] | undefined,
+  clientAdSourceApis: string[] | undefined
+): string[] | undefined {
+  if (!episodes || episodes.length === 0) return episodes;
+  if (!clientAdSourceApis || !clientAdSourceApis.includes(sourceCode)) {
+    return episodes;
+  }
+
+  const ua = (request.headers.get('user-agent') || '').toLowerCase();
+  if (!ua.includes('moontvplus app') && !ua.includes('oriontv')) {
+    return episodes;
+  }
+
+  const origin = getRequestSiteOrigin(request);
+  return episodes.map((episode) => {
+    if (!episode || typeof episode !== 'string') return episode;
+    if (
+      episode.includes('/api/proxy-m3u8') ||
+      episode.includes('/api/proxy/vod/m3u8')
+    ) {
+      return episode;
+    }
+    // 仅处理 http(s) 直链 m3u8，站内相对播放地址不改写
+    if (!/^https?:\/\//i.test(episode)) return episode;
+    return `${origin}/api/proxy-m3u8?url=${encodeURIComponent(episode)}`;
+  });
+}
+
+/**
+ * 网盘集标题：保留完整文件名（去掉常见视频扩展名），
+ * 供前端选集按钮长按/右键查看全名；按钮短标签仍由前端从文件名提取集数。
+ * `parsed` 仅用于排序，不再覆盖为「第N集」。
+ */
+function formatNetdiskEpisodeTitle(
+  _parsed: {
+    season?: number;
+    episode?: number;
+  },
+  fallback: string
+) {
+  const name = (fallback || '').trim();
+  if (!name) return fallback;
+  // 去掉末尾视频扩展名，保留完整可读文件名
+  return name.replace(
+    /\.(mp4|mkv|ts|m2ts|avi|mov|wmv|flv|webm|m4v|rmvb|iso|mpg|mpeg|m3u8)$/i,
+    ''
+  );
 }
 
 /**
@@ -111,9 +178,23 @@ export async function GET(request: NextRequest) {
   const sourceCode = normalizeNetdiskSource(searchParams.get('source'));
   const fileName = searchParams.get('fileName'); // 小雅源：用户点击的文件名
   const title = searchParams.get('title');
+  const includeSpecialSources = searchParams.get('special') === '1';
 
   if (!id || !sourceCode) {
     return NextResponse.json({ error: '缺少必要参数' }, { status: 400 });
+  }
+
+  if (isNetdiskSource(sourceCode)) {
+    const allowed = await hasFeaturePermission(
+      authInfo.username,
+      'netdisk_temp_play'
+    );
+    if (!allowed) {
+      return NextResponse.json(
+        { error: '无权限使用临时播放' },
+        { status: 403 }
+      );
+    }
   }
 
   const parsedScriptSource = parseScriptSourceValue(sourceCode);
@@ -125,11 +206,12 @@ export async function GET(request: NextRequest) {
         payload: {},
       });
       const sources = normalizeScriptSources(sourcesExecution.result);
-      const sourceInfo =
-        sources.find((item) => item.id === parsedScriptSource.sourceId) || {
-          id: parsedScriptSource.sourceId,
-          name: parsedScriptSource.sourceId,
-        };
+      const sourceInfo = sources.find(
+        (item) => item.id === parsedScriptSource.sourceId
+      ) || {
+        id: parsedScriptSource.sourceId,
+        name: parsedScriptSource.sourceId,
+      };
 
       const detailExecution = await executeSavedSourceScript({
         key: parsedScriptSource.scriptKey,
@@ -165,7 +247,10 @@ export async function GET(request: NextRequest) {
       const config = await getConfig();
 
       // 检查是否有启用的 Emby 源
-      if (!config.EmbyConfig?.Sources || config.EmbyConfig.Sources.length === 0) {
+      if (
+        !config.EmbyConfig?.Sources ||
+        config.EmbyConfig.Sources.length === 0
+      ) {
         throw new Error('Emby 未配置或未启用');
       }
 
@@ -178,13 +263,13 @@ export async function GET(request: NextRequest) {
       // 使用 EmbyManager 获取客户端和配置
       const { embyManager } = await import('@/lib/emby-manager');
       const sources = await embyManager.getEnabledSources();
-      const sourceConfig = sources.find(s => s.key === embyKey);
+      const sourceConfig = sources.find((s) => s.key === embyKey);
       const sourceName = sourceConfig?.name || 'Emby';
 
       const client = await embyManager.getClient(embyKey);
 
-      // 获取代理 token（如果启用了代理）
-      const proxyToken = client.isProxyEnabled() ? await getProxyToken(request) : null;
+      // 获取代理 token（图片/字幕代理使用；没有 token 时会回退到登录态校验）
+      const proxyToken = await getProxyToken(request);
 
       // 获取媒体详情
       const item = await client.getItem(id);
@@ -192,14 +277,19 @@ export async function GET(request: NextRequest) {
       // 根据类型处理
       if (item.Type === 'Movie') {
         // 电影
-        const subtitles = client.getSubtitles(item);
+        const subtitles = client.getSubtitles(item, proxyToken);
 
         const result = {
           source: sourceCode, // 保持与请求一致（emby 或 emby_key）
           source_name: sourceName,
           id: item.Id,
           title: item.Name,
-          poster: client.getImageUrl(item.Id, 'Primary', undefined, proxyToken || undefined),
+          poster: client.getImageUrl(
+            item.Id,
+            'Primary',
+            undefined,
+            proxyToken || undefined
+          ),
           year: item.ProductionYear?.toString() || '',
           douban_id: 0,
           desc: item.Overview || '',
@@ -233,17 +323,26 @@ export async function GET(request: NextRequest) {
           source_name: sourceName,
           id: item.Id,
           title: item.Name,
-          poster: client.getImageUrl(item.Id, 'Primary', undefined, proxyToken || undefined),
+          poster: client.getImageUrl(
+            item.Id,
+            'Primary',
+            undefined,
+            proxyToken || undefined
+          ),
           year: item.ProductionYear?.toString() || '',
           douban_id: 0,
           desc: item.Overview || '',
-          episodes: await Promise.all(allEpisodes.map((ep) => client.getStreamUrl(ep.Id))),
+          episodes: await Promise.all(
+            allEpisodes.map((ep) => client.getStreamUrl(ep.Id))
+          ),
           episodes_titles: allEpisodes.map((ep) => {
             const seasonNum = ep.ParentIndexNumber || 1;
             const episodeNum = ep.IndexNumber || 1;
-            return `S${seasonNum.toString().padStart(2, '0')}E${episodeNum.toString().padStart(2, '0')}`;
+            return `S${seasonNum.toString().padStart(2, '0')}E${episodeNum
+              .toString()
+              .padStart(2, '0')}`;
           }),
-          subtitles: allEpisodes.map((ep) => client.getSubtitles(ep)),
+          subtitles: allEpisodes.map((ep) => client.getSubtitles(ep, proxyToken)),
           proxyMode: false,
         };
 
@@ -265,16 +364,14 @@ export async function GET(request: NextRequest) {
       const config = await getConfig();
       const xiaoyaConfig = config.XiaoyaConfig;
 
-      if (
-        !xiaoyaConfig ||
-        !xiaoyaConfig.Enabled ||
-        !xiaoyaConfig.ServerURL
-      ) {
+      if (!xiaoyaConfig || !xiaoyaConfig.Enabled || !xiaoyaConfig.ServerURL) {
         throw new Error('小雅未配置或未启用');
       }
 
       const { XiaoyaClient } = await import('@/lib/xiaoya.client');
-      const { getXiaoyaMetadata, getXiaoyaEpisodes } = await import('@/lib/xiaoya-metadata');
+      const { getXiaoyaMetadata, getXiaoyaEpisodes } = await import(
+        '@/lib/xiaoya-metadata'
+      );
       const { base58Decode, base58Encode } = await import('@/lib/utils');
 
       const client = new XiaoyaClient(
@@ -303,7 +400,9 @@ export async function GET(request: NextRequest) {
       let clickedFilePath: string | undefined;
       if (fileName) {
         // 拼接目录路径和文件名
-        clickedFilePath = `${decodedDirPath}${decodedDirPath.endsWith('/') ? '' : '/'}${fileName}`;
+        clickedFilePath = `${decodedDirPath}${
+          decodedDirPath.endsWith('/') ? '' : '/'
+        }${fileName}`;
         console.log('[xiaoya] 用户点击的文件路径:', clickedFilePath);
       }
 
@@ -323,7 +422,9 @@ export async function GET(request: NextRequest) {
       // 如果有点击的文件路径，找到对应的集数索引
       let clickedFileIndex = -1;
       if (clickedFilePath) {
-        clickedFileIndex = episodes.findIndex(ep => ep.path === clickedFilePath);
+        clickedFileIndex = episodes.findIndex(
+          (ep) => ep.path === clickedFilePath
+        );
         console.log('[xiaoya] 文件在集数列表中的索引:', clickedFileIndex);
       }
 
@@ -336,12 +437,16 @@ export async function GET(request: NextRequest) {
         year: metadata.year || '',
         douban_id: 0,
         desc: metadata.plot || '',
-        episodes: episodes.map(ep => `/api/xiaoya/play?path=${encodeURIComponent(base58Encode(ep.path))}`),
-        episodes_titles: episodes.map(ep => ep.title),
+        episodes: episodes.map(
+          (ep) =>
+            `/api/xiaoya/play?path=${encodeURIComponent(base58Encode(ep.path))}`
+        ),
+        episodes_titles: episodes.map((ep) => ep.title),
         subtitles: [],
         proxyMode: false,
         // 返回用户点击的文件索引（如果找到的话）
-        initialEpisodeIndex: clickedFileIndex >= 0 ? clickedFileIndex : undefined,
+        initialEpisodeIndex:
+          clickedFileIndex >= 0 ? clickedFileIndex : undefined,
         // 返回元数据来源
         metadataSource: metadata.source,
       };
@@ -364,11 +469,17 @@ export async function GET(request: NextRequest) {
         throw new Error('移动云盘未配置或未启用');
       }
 
-      let session = refreshMobileNetdiskSession(id) || getMobileNetdiskSession(id);
+      let session =
+        refreshMobileNetdiskSession(id) || getMobileNetdiskSession(id);
       if (!session) {
         const payload = parseMobileNetdiskId(id);
-        const { listMobileShareVideos } = await import('@/lib/netdisk/mobile.client');
-        const result = await listMobileShareVideos(payload.shareUrl, mobileConfig.Authorization);
+        const { listMobileShareVideos } = await import(
+          '@/lib/netdisk/mobile.client'
+        );
+        const result = await listMobileShareVideos(
+          payload.shareUrl,
+          mobileConfig.Authorization
+        );
         session = createMobileNetdiskSession({
           title: title || result.title,
           shareUrl: payload.shareUrl,
@@ -381,8 +492,9 @@ export async function GET(request: NextRequest) {
       }
       const mobileSession = session;
       const { parseVideoFileName } = await import('@/lib/video-parser');
-      const parsedFiles = mobileSession.files.map((file, index) => {
-        const parsed = parseVideoFileName(file.name);
+      const parsedFiles = mobileSession.files
+        .map((file, index) => {
+          const parsed = parseVideoFileName(file.name);
           return {
             ...file,
             originalIndex: index,
@@ -390,20 +502,24 @@ export async function GET(request: NextRequest) {
             isOVA: parsed.isOVA,
             displayTitle: formatNetdiskEpisodeTitle(parsed, file.name),
           };
-        }).sort((a, b) => {
-        if (a.isOVA && !b.isOVA) return 1;
-        if (!a.isOVA && b.isOVA) return -1;
-        return a.sortEpisode !== b.sortEpisode
-          ? a.sortEpisode - b.sortEpisode
-          : a.name.localeCompare(b.name, 'zh-Hans-CN', {
-              numeric: true,
-              sensitivity: 'base',
-            });
-      });
+        })
+        .sort((a, b) => {
+          if (a.isOVA && !b.isOVA) return 1;
+          if (!a.isOVA && b.isOVA) return -1;
+          return a.sortEpisode !== b.sortEpisode
+            ? a.sortEpisode - b.sortEpisode
+            : a.name.localeCompare(b.name, 'zh-Hans-CN', {
+                numeric: true,
+                sensitivity: 'base',
+              });
+        });
 
-      const episodes = parsedFiles.map((file) => (
-        `/api/netdisk/mobile/play?id=${encodeURIComponent(mobileSession.id)}&episodeIndex=${file.originalIndex}`
-      ));
+      const episodes = parsedFiles.map(
+        (file) =>
+          `/api/netdisk/mobile/play?id=${encodeURIComponent(
+            mobileSession.id
+          )}&episodeIndex=${file.originalIndex}`
+      );
 
       return NextResponse.json({
         source: NETDISK_MOBILE_SOURCE,
@@ -434,11 +550,18 @@ export async function GET(request: NextRequest) {
         throw new Error('百度网盘未配置或未启用');
       }
 
-      let session = refreshBaiduNetdiskSession(id) || getBaiduNetdiskSession(id);
+      let session =
+        refreshBaiduNetdiskSession(id) || getBaiduNetdiskSession(id);
       if (!session) {
         const payload = parseBaiduNetdiskId(id);
-        const { listBaiduShareVideos } = await import('@/lib/netdisk/baidu.client');
-        const result = await listBaiduShareVideos(payload.shareUrl, baiduConfig.Cookie, payload.passcode || '');
+        const { listBaiduShareVideos } = await import(
+          '@/lib/netdisk/baidu.client'
+        );
+        const result = await listBaiduShareVideos(
+          payload.shareUrl,
+          baiduConfig.Cookie,
+          payload.passcode || ''
+        );
         session = createBaiduNetdiskSession({
           title: title || result.title,
           shareUrl: payload.shareUrl,
@@ -469,7 +592,10 @@ export async function GET(request: NextRequest) {
           if (!a.isOVA && b.isOVA) return -1;
           return a.sortEpisode !== b.sortEpisode
             ? a.sortEpisode - b.sortEpisode
-            : a.name.localeCompare(b.name, 'zh-Hans-CN', { numeric: true, sensitivity: 'base' });
+            : a.name.localeCompare(b.name, 'zh-Hans-CN', {
+                numeric: true,
+                sensitivity: 'base',
+              });
         });
 
       return NextResponse.json({
@@ -481,9 +607,12 @@ export async function GET(request: NextRequest) {
         year: '',
         douban_id: 0,
         desc: `百度网盘分享：${baiduSession.shareUrl}`,
-        episodes: parsedFiles.map((file) => (
-          `/api/netdisk/baidu/play?id=${encodeURIComponent(baiduSession.id)}&episodeIndex=${file.originalIndex}`
-        )),
+        episodes: parsedFiles.map(
+          (file) =>
+            `/api/netdisk/baidu/play?id=${encodeURIComponent(
+              baiduSession.id
+            )}&episodeIndex=${file.originalIndex}`
+        ),
         episodes_titles: parsedFiles.map((file) => file.displayTitle),
         proxyMode: false,
       });
@@ -499,14 +628,21 @@ export async function GET(request: NextRequest) {
     try {
       const config = await getConfig();
       const tianyiConfig = config.NetDiskConfig?.Tianyi;
-      if (!tianyiConfig?.Enabled || !tianyiConfig.Account || !tianyiConfig.Password) {
+      if (
+        !tianyiConfig?.Enabled ||
+        !tianyiConfig.Account ||
+        !tianyiConfig.Password
+      ) {
         throw new Error('天翼云盘未配置或未启用');
       }
 
-      let session = refreshTianyiNetdiskSession(id) || getTianyiNetdiskSession(id);
+      let session =
+        refreshTianyiNetdiskSession(id) || getTianyiNetdiskSession(id);
       if (!session) {
         const payload = parseTianyiNetdiskId(id);
-        const { listTianyiShareVideos } = await import('@/lib/netdisk/tianyi.client');
+        const { listTianyiShareVideos } = await import(
+          '@/lib/netdisk/tianyi.client'
+        );
         const result = await listTianyiShareVideos(
           payload.shareUrl,
           tianyiConfig.Account,
@@ -546,7 +682,10 @@ export async function GET(request: NextRequest) {
           if (!a.isOVA && b.isOVA) return -1;
           return a.sortEpisode !== b.sortEpisode
             ? a.sortEpisode - b.sortEpisode
-            : a.name.localeCompare(b.name, 'zh-Hans-CN', { numeric: true, sensitivity: 'base' });
+            : a.name.localeCompare(b.name, 'zh-Hans-CN', {
+                numeric: true,
+                sensitivity: 'base',
+              });
         });
 
       return NextResponse.json({
@@ -558,9 +697,12 @@ export async function GET(request: NextRequest) {
         year: '',
         douban_id: 0,
         desc: `天翼云盘分享：${tianyiSession.shareUrl}`,
-        episodes: parsedFiles.map((file) => (
-          `/api/netdisk/tianyi/play?id=${encodeURIComponent(tianyiSession.id)}&episodeIndex=${file.originalIndex}`
-        )),
+        episodes: parsedFiles.map(
+          (file) =>
+            `/api/netdisk/tianyi/play?id=${encodeURIComponent(
+              tianyiSession.id
+            )}&episodeIndex=${file.originalIndex}`
+        ),
         episodes_titles: parsedFiles.map((file) => file.displayTitle),
         proxyMode: false,
       });
@@ -576,15 +718,25 @@ export async function GET(request: NextRequest) {
     try {
       const config = await getConfig();
       const pan123Config = config.NetDiskConfig?.Pan123;
-      if (!pan123Config?.Enabled || !pan123Config.Account || !pan123Config.Password) {
+      if (
+        !pan123Config?.Enabled ||
+        !pan123Config.Account ||
+        !pan123Config.Password
+      ) {
         throw new Error('123网盘未配置或未启用');
       }
 
-      let session = refreshPan123NetdiskSession(id) || getPan123NetdiskSession(id);
+      let session =
+        refreshPan123NetdiskSession(id) || getPan123NetdiskSession(id);
       if (!session) {
         const payload = parsePan123NetdiskId(id);
-        const { listPan123ShareVideos } = await import('@/lib/netdisk/pan123.client');
-        const result = await listPan123ShareVideos(payload.shareUrl, payload.passcode || '');
+        const { listPan123ShareVideos } = await import(
+          '@/lib/netdisk/pan123.client'
+        );
+        const result = await listPan123ShareVideos(
+          payload.shareUrl,
+          payload.passcode || ''
+        );
         session = createPan123NetdiskSession({
           title: title || result.title,
           shareUrl: payload.shareUrl,
@@ -614,7 +766,10 @@ export async function GET(request: NextRequest) {
           if (!a.isOVA && b.isOVA) return -1;
           return a.sortEpisode !== b.sortEpisode
             ? a.sortEpisode - b.sortEpisode
-            : a.fileName.localeCompare(b.fileName, 'zh-Hans-CN', { numeric: true, sensitivity: 'base' });
+            : a.fileName.localeCompare(b.fileName, 'zh-Hans-CN', {
+                numeric: true,
+                sensitivity: 'base',
+              });
         });
 
       return NextResponse.json({
@@ -626,9 +781,12 @@ export async function GET(request: NextRequest) {
         year: '',
         douban_id: 0,
         desc: `123网盘分享：${pan123Session.shareUrl}`,
-        episodes: parsedFiles.map((file) => (
-          `/api/netdisk/123/play?id=${encodeURIComponent(pan123Session.id)}&episodeIndex=${file.originalIndex}`
-        )),
+        episodes: parsedFiles.map(
+          (file) =>
+            `/api/netdisk/123/play?id=${encodeURIComponent(
+              pan123Session.id
+            )}&episodeIndex=${file.originalIndex}`
+        ),
         episodes_titles: parsedFiles.map((file) => file.displayTitle),
         proxyMode: false,
       });
@@ -649,11 +807,17 @@ export async function GET(request: NextRequest) {
         throw new Error('115网盘未配置或未启用');
       }
 
-      let session = refreshPan115NetdiskSession(id) || getPan115NetdiskSession(id);
+      let session =
+        refreshPan115NetdiskSession(id) || getPan115NetdiskSession(id);
       if (!session) {
         const payload = parsePan115NetdiskId(id);
-        const { listPan115ShareVideos } = await import('@/lib/netdisk/pan115.client');
-        const result = await listPan115ShareVideos(payload.shareUrl, payload.passcode || '');
+        const { listPan115ShareVideos } = await import(
+          '@/lib/netdisk/pan115.client'
+        );
+        const result = await listPan115ShareVideos(
+          payload.shareUrl,
+          payload.passcode || ''
+        );
         session = createPan115NetdiskSession({
           title: title || result.title,
           shareUrl: payload.shareUrl,
@@ -683,7 +847,10 @@ export async function GET(request: NextRequest) {
           if (!a.isOVA && b.isOVA) return -1;
           return a.sortEpisode !== b.sortEpisode
             ? a.sortEpisode - b.sortEpisode
-            : a.name.localeCompare(b.name, 'zh-Hans-CN', { numeric: true, sensitivity: 'base' });
+            : a.name.localeCompare(b.name, 'zh-Hans-CN', {
+                numeric: true,
+                sensitivity: 'base',
+              });
         });
 
       return NextResponse.json({
@@ -695,9 +862,12 @@ export async function GET(request: NextRequest) {
         year: '',
         douban_id: 0,
         desc: `115网盘分享：${pan115Session.shareUrl}`,
-        episodes: parsedFiles.map((file) => (
-          `/api/netdisk/115/play?id=${encodeURIComponent(pan115Session.id)}&episodeIndex=${file.originalIndex}`
-        )),
+        episodes: parsedFiles.map(
+          (file) =>
+            `/api/netdisk/115/play?id=${encodeURIComponent(
+              pan115Session.id
+            )}&episodeIndex=${file.originalIndex}`
+        ),
         episodes_titles: parsedFiles.map((file) => file.displayTitle),
         proxyMode: false,
       });
@@ -709,7 +879,10 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  if (sourceCode === NETDISK_QUARK_SOURCE || sourceCode === LEGACY_QUARK_TEMP_SOURCE) {
+  if (
+    sourceCode === NETDISK_QUARK_SOURCE ||
+    sourceCode === LEGACY_QUARK_TEMP_SOURCE
+  ) {
     try {
       const config = await getConfig();
       const quarkConfig = config.NetDiskConfig?.Quark;
@@ -718,11 +891,18 @@ export async function GET(request: NextRequest) {
       }
       const { parseVideoFileName } = await import('@/lib/video-parser');
 
-      let session = refreshQuarkNetdiskSession(id) || getQuarkNetdiskSession(id);
+      let session =
+        refreshQuarkNetdiskSession(id) || getQuarkNetdiskSession(id);
       if (!session) {
         const payload = parseQuarkNetdiskId(id);
-        const { listQuarkShareVideos } = await import('@/lib/netdisk/quark.client');
-        const result = await listQuarkShareVideos(payload.shareUrl, quarkConfig.Cookie, payload.passcode || '');
+        const { listQuarkShareVideos } = await import(
+          '@/lib/netdisk/quark.client'
+        );
+        const result = await listQuarkShareVideos(
+          payload.shareUrl,
+          quarkConfig.Cookie,
+          payload.passcode || ''
+        );
         session = createQuarkNetdiskSession({
           title: title || result.title,
           shareUrl: payload.shareUrl,
@@ -765,9 +945,12 @@ export async function GET(request: NextRequest) {
         year: '',
         douban_id: 0,
         desc: `夸克网盘分享：${quarkSession.shareUrl}`,
-        episodes: episodes.map((ep) => (
-          `/api/netdisk/quark/play?id=${encodeURIComponent(quarkSession.id)}&episodeIndex=${ep.originalIndex}`
-        )),
+        episodes: episodes.map(
+          (ep) =>
+            `/api/netdisk/quark/play?id=${encodeURIComponent(
+              quarkSession.id
+            )}&episodeIndex=${ep.originalIndex}`
+        ),
         episodes_titles: episodes.map((ep) => ep.title),
         proxyMode: false,
       });
@@ -792,7 +975,11 @@ export async function GET(request: NextRequest) {
       if (!session) {
         const payload = parseUCNetdiskId(id);
         const { listUCShareVideos } = await import('@/lib/netdisk/uc.client');
-        const result = await listUCShareVideos(payload.shareUrl, ucConfig.Cookie, payload.passcode || '');
+        const result = await listUCShareVideos(
+          payload.shareUrl,
+          ucConfig.Cookie,
+          payload.passcode || ''
+        );
         session = createUCNetdiskSession({
           title: title || result.title,
           shareUrl: payload.shareUrl,
@@ -835,9 +1022,12 @@ export async function GET(request: NextRequest) {
         year: '',
         douban_id: 0,
         desc: `UC网盘分享：${ucSession.shareUrl}`,
-        episodes: episodes.map((ep) => (
-          `/api/netdisk/uc/play?id=${encodeURIComponent(ucSession.id)}&episodeIndex=${ep.originalIndex}`
-        )),
+        episodes: episodes.map(
+          (ep) =>
+            `/api/netdisk/uc/play?id=${encodeURIComponent(
+              ucSession.id
+            )}&episodeIndex=${ep.originalIndex}`
+        ),
         episodes_titles: episodes.map((ep) => ep.title),
         proxyMode: false,
       });
@@ -871,7 +1061,9 @@ export async function GET(request: NextRequest) {
       let metaInfo: any = null;
       let folderMeta: any = null;
       try {
-        const { getCachedMetaInfo, setCachedMetaInfo } = await import('@/lib/openlist-cache');
+        const { getCachedMetaInfo, setCachedMetaInfo } = await import(
+          '@/lib/openlist-cache'
+        );
         const { db } = await import('@/lib/db');
 
         metaInfo = getCachedMetaInfo();
@@ -895,12 +1087,16 @@ export async function GET(request: NextRequest) {
 
       // 使用 folderName 构建实际路径
       const folderName = folderMeta.folderName;
-      const folderPath = `${rootPath}${rootPath.endsWith('/') ? '' : '/'}${folderName}`;
+      const folderPath = `${rootPath}${
+        rootPath.endsWith('/') ? '' : '/'
+      }${folderName}`;
 
       // 2. 直接调用 OpenList 客户端获取视频列表
       const { OpenListClient } = await import('@/lib/openlist.client');
-      const { getCachedVideoInfo, setCachedVideoInfo } = await import('@/lib/openlist-cache');
-      const { parseVideoFileName } = await import('@/lib/video-parser');
+      const { getCachedVideoInfo, setCachedVideoInfo } = await import(
+        '@/lib/openlist-cache'
+      );
+      const { formatEpisodeDisplayTitle, parseVideoFileName } = await import('@/lib/video-parser');
 
       const client = new OpenListClient(
         openListConfig.URL,
@@ -918,7 +1114,11 @@ export async function GET(request: NextRequest) {
       let hasMore = true;
 
       while (hasMore) {
-        const listResponse = await client.listDirectory(folderPath, currentPage, pageSize);
+        const listResponse = await client.listDirectory(
+          folderPath,
+          currentPage,
+          pageSize
+        );
 
         if (listResponse.code !== 200) {
           throw new Error('OpenList 列表获取失败4');
@@ -931,10 +1131,35 @@ export async function GET(request: NextRequest) {
         currentPage++;
       }
 
-      const videoExtensions = ['.mp4', '.mkv', '.avi', '.m3u8', '.flv', '.ts', '.mov', '.wmv', '.webm', '.rmvb', '.rm', '.mpg', '.mpeg', '.3gp', '.f4v', '.m4v', '.vob'];
+      const videoExtensions = [
+        '.mp4',
+        '.mkv',
+        '.avi',
+        '.m3u8',
+        '.flv',
+        '.ts',
+        '.mov',
+        '.wmv',
+        '.webm',
+        '.rmvb',
+        '.rm',
+        '.mpg',
+        '.mpeg',
+        '.3gp',
+        '.f4v',
+        '.m4v',
+        '.vob',
+      ];
       const videoFiles = allFiles.filter((item) => {
-        if (item.is_dir || item.name.startsWith('.') || item.name.endsWith('.json')) return false;
-        return videoExtensions.some(ext => item.name.toLowerCase().endsWith(ext));
+        if (
+          item.is_dir ||
+          item.name.startsWith('.') ||
+          item.name.endsWith('.json')
+        )
+          return false;
+        return videoExtensions.some((ext) =>
+          item.name.toLowerCase().endsWith(ext)
+        );
       });
 
       if (!videoInfo) {
@@ -944,7 +1169,7 @@ export async function GET(request: NextRequest) {
           const file = videoFiles[i];
           const parsed = parseVideoFileName(file.name);
           videoInfo.episodes[file.name] = {
-            episode: parsed.episode || (i + 1),
+            episode: parsed.episode || i + 1,
             season: parsed.season,
             title: parsed.title,
             parsed_from: 'filename',
@@ -954,47 +1179,93 @@ export async function GET(request: NextRequest) {
         setCachedVideoInfo(folderPath, videoInfo);
       }
 
+      const parsedSeasons = new Set(
+        videoFiles
+          .map((file) => parseVideoFileName(file.name).season)
+          .filter((season): season is number => typeof season === 'number')
+      );
+      const hasMultipleSeasons = parsedSeasons.size > 1;
+
       const episodes = videoFiles
         .map((file, index) => {
           const parsed = parseVideoFileName(file.name);
           let episodeInfo;
           if (parsed.episode) {
-            episodeInfo = { episode: parsed.episode, season: parsed.season, title: parsed.title, parsed_from: 'filename', isOVA: parsed.isOVA };
+            episodeInfo = {
+              episode: parsed.episode,
+              season: parsed.season,
+              title: parsed.title,
+              parsed_from: 'filename',
+              isOVA: parsed.isOVA,
+            };
           } else {
-            episodeInfo = videoInfo!.episodes[file.name] || { episode: index + 1, season: undefined, title: undefined, parsed_from: 'filename' };
+            episodeInfo = videoInfo!.episodes[file.name] || {
+              episode: index + 1,
+              season: undefined,
+              title: undefined,
+              parsed_from: 'filename',
+            };
           }
-          let displayTitle = episodeInfo.title;
-          if (!displayTitle && episodeInfo.episode) {
-            displayTitle = episodeInfo.isOVA ? `OVA ${episodeInfo.episode}` : `第${episodeInfo.episode}集`;
+          let displayTitle = formatEpisodeDisplayTitle(
+            { episode: episodeInfo.episode, season: episodeInfo.season, isOVA: episodeInfo.isOVA },
+            hasMultipleSeasons
+          );
+          if (!displayTitle) {
+            displayTitle = episodeInfo.title;
           }
           if (!displayTitle) {
             displayTitle = file.name;
           }
-          return { fileName: file.name, episode: episodeInfo.episode || 0, season: episodeInfo.season, title: displayTitle, isOVA: episodeInfo.isOVA };
+          return {
+            fileName: file.name,
+            episode: episodeInfo.episode || 0,
+            season: episodeInfo.season,
+            title: displayTitle,
+            isOVA: episodeInfo.isOVA,
+          };
         })
         .sort((a, b) => {
           // OVA 排在最后
           if (a.isOVA && !b.isOVA) return 1;
           if (!a.isOVA && b.isOVA) return -1;
           // 都是 OVA 或都不是 OVA，按集数排序
-          return a.episode !== b.episode ? a.episode - b.episode : a.fileName.localeCompare(b.fileName);
+          return a.episode !== b.episode
+            ? a.episode - b.episode
+            : a.fileName.localeCompare(b.fileName);
         });
 
       // 3. 从 metainfo 中获取元数据
       const { getTMDBImageUrl } = await import('@/lib/tmdb.search');
+      const { resolvePathMeta } = await import('@/lib/openlist-path-meta');
+      // folderName 为 metainfo 完整路径，PathMeta 最长前缀匹配
+      const pathMetaResolved = resolvePathMeta(
+        folderName,
+        openListConfig.PathMeta
+      );
 
       const result = {
         source: 'openlist',
         source_name: '私人影库',
         id: id,
         title: folderMeta?.title || folderName,
-        poster: folderMeta?.poster_path ? getTMDBImageUrl(folderMeta.poster_path) : '',
-        year: folderMeta?.release_date ? folderMeta.release_date.split('-')[0] : '',
+        poster: folderMeta?.poster_path
+          ? getTMDBImageUrl(folderMeta.poster_path)
+          : '',
+        year: folderMeta?.release_date
+          ? folderMeta.release_date.split('-')[0]
+          : '',
         douban_id: 0,
         desc: folderMeta?.overview || '',
-        episodes: episodes.map((ep) => `/api/openlist/play?folder=${encodeURIComponent(folderName)}&fileName=${encodeURIComponent(ep.fileName)}`),
+        episodes: episodes.map(
+          (ep) =>
+            `/api/openlist/play?folder=${encodeURIComponent(
+              folderName
+            )}&fileName=${encodeURIComponent(ep.fileName)}`
+        ),
         episodes_titles: episodes.map((ep) => ep.title),
         proxyMode: false, // openlist 源不使用代理模式
+        category: pathMetaResolved.category || undefined,
+        refresh14m: pathMetaResolved.refresh14m,
       };
 
       return NextResponse.json(result);
@@ -1012,7 +1283,7 @@ export async function GET(request: NextRequest) {
 
   // 对于其他采集源，直接按 id 获取详情。
   try {
-    const apiSites = await getAvailableApiSites(authInfo.username);
+    const apiSites = await getAvailableApiSites(authInfo.username, includeSpecialSources);
     const apiSite = apiSites.find((site) => site.key === sourceCode);
 
     if (!apiSite) {
@@ -1027,7 +1298,31 @@ export async function GET(request: NextRequest) {
       proxyMode: apiSite.proxyMode || false,
     };
 
+    // 客户端广告配置：指定源 + APP/OrionTV UA 时 m3u8 套 proxy-m3u8
+    const adminConfig = await getConfig();
+    const clientAdEnabled = (adminConfig.ClientAdSourceApis || []).includes(
+      sourceCode
+    );
+    resultWithProxy.episodes =
+      applyClientAdProxyToEpisodes(
+        request,
+        sourceCode,
+        resultWithProxy.episodes,
+        adminConfig.ClientAdSourceApis
+      ) || resultWithProxy.episodes;
+
     const cacheTime = await getCacheTime();
+
+    // 同一源在不同 UA 下 episodes 可能不同，避免 CDN/共享缓存串号
+    if (clientAdEnabled) {
+      return NextResponse.json(resultWithProxy, {
+        headers: {
+          'Cache-Control': 'private, no-store',
+          Vary: 'User-Agent',
+          'Netlify-Vary': 'query',
+        },
+      });
+    }
 
     return NextResponse.json(resultWithProxy, {
       headers: {

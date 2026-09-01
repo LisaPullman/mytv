@@ -10,10 +10,6 @@ import {
   assertMobileAuthorizationHeaderSafe,
   normalizeMobileAuthorization,
 } from '@/lib/netdisk/mobile.client';
-
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
-
 import {
   normalizePan123Account,
   normalizePan123Password,
@@ -83,6 +79,8 @@ export async function POST(request: NextRequest) {
         Enabled: Boolean(Quark?.Enabled),
         Cookie: normalizedCookie,
         SavePath: Quark?.SavePath || '/',
+        PlayMode: Quark?.PlayMode === 'direct_first' ? 'direct_first' : 'transcode_first',
+        MultiThreadPlayback: Boolean(Quark?.MultiThreadPlayback),
       };
       adminConfig.NetDiskConfig.Mobile = {
         Enabled: Boolean(Mobile?.Enabled),

@@ -185,14 +185,14 @@ const MobileBottomNav = ({ activePath }: MobileBottomNavProps) => {
               >
                 <item.icon
                   className={`h-6 w-6 ${active
-                    ? 'text-green-600 dark:text-green-400'
+                    ? 'text-[color:var(--brand)] dark:text-[color:var(--brand)]'
                     : 'text-gray-500 dark:text-gray-400'
                     }`}
                 />
                 <span
                   className={
                     active
-                      ? 'text-green-600 dark:text-green-400'
+                      ? 'text-[color:var(--brand)] dark:text-[color:var(--brand)]'
                       : 'text-gray-600 dark:text-gray-300'
                   }
                 >

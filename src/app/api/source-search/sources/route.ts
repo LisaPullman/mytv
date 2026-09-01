@@ -3,10 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getAvailableApiSites } from '@/lib/config';
 
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
-
-
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
@@ -16,7 +12,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const apiSites = await getAvailableApiSites(authInfo.username);
+    const includeSpecialSources = request.nextUrl.searchParams.get('special') === '1';
+    const apiSites = await getAvailableApiSites(authInfo.username, includeSpecialSources);
 
     return NextResponse.json({
       sources: apiSites.map((site) => ({

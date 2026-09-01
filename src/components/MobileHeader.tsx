@@ -15,13 +15,15 @@ interface MobileHeaderProps {
 const MobileHeader = ({ showBackButton = false }: MobileHeaderProps) => {
   const { siteName } = useSite();
   return (
-    <header className='glass md:hidden fixed top-0 left-0 right-0 z-[999] w-full edge-highlight'>
-      <div className='h-12 flex items-center justify-between px-4'>
+    <header
+      className='md:hidden fixed top-0 left-0 right-0 z-[999] w-full glass edge-highlight'
+      style={{ paddingTop: 'env(safe-area-inset-top)' }}
+    >
+      <div className='relative h-12 flex items-center justify-between px-4'>
         {/* 左侧：搜索按钮、返回按钮和设置按钮 */}
         <div className='flex items-center gap-2'>
           <Link
             href='/search'
-            prefetch={false}
             className='w-10 h-10 p-2 rounded-full flex items-center justify-center text-[color:var(--ink-soft)] hover:bg-[color:var(--brand-muted)] transition-colors'
           >
             <svg
@@ -48,31 +50,22 @@ const MobileHeader = ({ showBackButton = false }: MobileHeaderProps) => {
           <UserMenu />
           <UpdateNotification />
         </div>
-      </div>
 
-      {/* 中间：f.foxai Logo（绝对居中） */}
-      <div className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'>
-        <Link
-          href='/'
-          prefetch={false}
-          className='group inline-flex items-center gap-1.5'
-          aria-label={siteName || 'f.foxai'}
-        >
-          <span
-            className='inline-flex items-center justify-center rounded-lg p-1 transition-transform duration-300 group-hover:scale-105'
-            style={{
-              background:
-                'linear-gradient(135deg, color-mix(in oklch, var(--brand) 20%, transparent), color-mix(in oklch, var(--brand) 4%, transparent))',
-              border: '1px solid color-mix(in oklch, var(--brand) 30%, transparent)',
-              boxShadow: '0 0 14px -4px var(--brand-glow)',
-            }}
+        {/* 中间：foxai Logo（相对内容行居中，避免被 safe-area 顶偏） */}
+        <div className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'>
+          <Link
+            href='/'
+            prefetch={false}
+            className='group inline-flex items-center gap-1.5'
+            style={{ color: 'var(--ink)' }}
+            aria-label={siteName || 'foxai'}
           >
             <svg
               width='18'
               height='18'
               viewBox='0 0 64 64'
               aria-hidden='true'
-              className='text-[color:var(--brand)]'
+              className='transition-transform duration-300 group-hover:scale-105'
             >
               <g
                 fill='none'
@@ -86,23 +79,18 @@ const MobileHeader = ({ showBackButton = false }: MobileHeaderProps) => {
               </g>
               <circle cx='49' cy='9' r='5.5' fill='currentColor' />
             </svg>
-          </span>
-          <span
-            className='inline-flex items-baseline gap-0.5 text-[17px] font-semibold tracking-tight'
-            style={{ letterSpacing: '-0.01em', color: 'var(--ink)' }}
-          >
-            <span>f</span>
             <span
-              aria-hidden='true'
-              className='text-[color:var(--ink-soft)] font-light'
+              style={{
+                fontWeight: 600,
+                letterSpacing: '-0.01em',
+                fontSize: 12,
+                lineHeight: 1,
+              }}
             >
-              .
-            </span>
-            <span>
               fox<span style={{ color: 'var(--brand)' }}>ai</span>
             </span>
-          </span>
-        </Link>
+          </Link>
+        </div>
       </div>
     </header>
   );

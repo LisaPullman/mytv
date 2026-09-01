@@ -2,13 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { BookAcquisitionLink } from '@/lib/book.types';
 import { db } from '@/lib/db';
-import { opdsClient } from '@/lib/opds.client';
+import { bookProvider } from '@/lib/book-provider';
 
 import { getAuthorizedBooksUsername } from '../_utils';
-
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
-
 
 export const runtime = 'nodejs';
 
@@ -53,7 +49,7 @@ async function resolveDetail(username: string, payload: DetailPayload) {
           }]
         : undefined;
 
-  const detail = await opdsClient.getBookDetail(sourceId, href, {
+  const detail = await bookProvider.getBookDetail(sourceId, href, {
     id: bookId,
     title: payload.title || shelfItem?.title || readRecord?.title || undefined,
     author: payload.author || shelfItem?.author || readRecord?.author || undefined,

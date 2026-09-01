@@ -3,14 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getStorage } from '@/lib/db';
 
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
-
-
 export const runtime = 'nodejs';
 
 /**
- * GET - 获取用户邮箱设置
+ * GET - 获取用户通知设置
  */
 export async function GET(request: NextRequest) {
   const authInfo = getAuthInfoFromCookie(request);
@@ -35,7 +31,7 @@ export async function GET(request: NextRequest) {
       emailNotifications,
     });
   } catch (error) {
-    console.error('获取用户邮箱设置失败:', error);
+    console.error('获取用户通知设置失败:', error);
     return NextResponse.json(
       { error: (error as Error).message },
       { status: 500 }
@@ -44,7 +40,7 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * POST - 保存用户邮箱设置
+ * POST - 保存用户通知设置
  */
 export async function POST(request: NextRequest) {
   const authInfo = getAuthInfoFromCookie(request);
@@ -80,12 +76,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
+
+
     return NextResponse.json({
       success: true,
-      message: '邮箱设置保存成功',
+      message: '通知设置保存成功',
     });
   } catch (error) {
-    console.error('保存用户邮箱设置失败:', error);
+    console.error('保存用户通知设置失败:', error);
     return NextResponse.json(
       { error: (error as Error).message },
       { status: 500 }

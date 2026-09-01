@@ -9,9 +9,15 @@ import {
   setNetdiskCheckInflight,
 } from './cache';
 import type { NetdiskCheckPlatform, NetdiskCheckResult } from './types';
-
-// eslint-disable-next-line no-eval
-const nodeRequire = eval('require') as NodeRequire;
+import { check115 } from './vendor/checkers/pan115';
+import { checkAliyun } from './vendor/checkers/aliyun';
+import { checkBaidu } from './vendor/checkers/baidu';
+import { checkCMCC } from './vendor/checkers/cmcc';
+import { check123 } from './vendor/checkers/pan123';
+import { checkQuark } from './vendor/checkers/quark';
+import { checkTianyi } from './vendor/checkers/tianyi';
+import { checkUC } from './vendor/checkers/uc';
+import { checkXunlei } from './vendor/checkers/xunlei';
 
 const RATE_LIMIT_REASON_PATTERNS = [/频率限制/i, /请求过快/i, /rate.?limit/i, /too many/i, /风控/i];
 
@@ -19,10 +25,6 @@ type RawCheckerResult = {
   valid?: boolean;
   reason?: string;
   isRateLimited?: boolean;
-};
-
-type CheckerModule = {
-  [key: string]: (url: string) => Promise<RawCheckerResult>;
 };
 
 const PLATFORM_PATTERNS: Record<NetdiskCheckPlatform, RegExp[]> = {
@@ -37,36 +39,17 @@ const PLATFORM_PATTERNS: Record<NetdiskCheckPlatform, RegExp[]> = {
   cmcc: [/yun\.139\.com\/shareweb/i, /caiyun\.139\.com\/m\/i/i],
 };
 
-const CHECKER_EXPORTS: Record<NetdiskCheckPlatform, { modulePath: string; exportName: string }> = {
-  '115': { modulePath: '@/lib/pancheck/vendor/checkers/pan115.js', exportName: 'check115' },
-  aliyun: { modulePath: '@/lib/pancheck/vendor/checkers/aliyun.js', exportName: 'checkAliyun' },
-  baidu: { modulePath: '@/lib/pancheck/vendor/checkers/baidu.js', exportName: 'checkBaidu' },
-  cmcc: { modulePath: '@/lib/pancheck/vendor/checkers/cmcc.js', exportName: 'checkCMCC' },
-  pan123: { modulePath: '@/lib/pancheck/vendor/checkers/pan123.js', exportName: 'check123' },
-  quark: { modulePath: '@/lib/pancheck/vendor/checkers/quark.js', exportName: 'checkQuark' },
-  tianyi: { modulePath: '@/lib/pancheck/vendor/checkers/tianyi.js', exportName: 'checkTianyi' },
-  uc: { modulePath: '@/lib/pancheck/vendor/checkers/uc.js', exportName: 'checkUC' },
-  xunlei: { modulePath: '@/lib/pancheck/vendor/checkers/xunlei.js', exportName: 'checkXunlei' },
+const CHECKERS: Record<NetdiskCheckPlatform, (url: string) => Promise<RawCheckerResult>> = {
+  '115': check115,
+  aliyun: checkAliyun,
+  baidu: checkBaidu,
+  cmcc: checkCMCC,
+  pan123: check123,
+  quark: checkQuark,
+  tianyi: checkTianyi,
+  uc: checkUC,
+  xunlei: checkXunlei,
 };
-
-const checkerFnCache = new Map<NetdiskCheckPlatform, (url: string) => Promise<RawCheckerResult>>();
-
-function resolveModulePath(modulePath: string) {
-  return modulePath.replace(/^@\//, `${process.cwd()}/src/`);
-}
-
-function getChecker(platform: NetdiskCheckPlatform) {
-  const cached = checkerFnCache.get(platform);
-  if (cached) return cached;
-  const config = CHECKER_EXPORTS[platform];
-  const mod = nodeRequire(resolveModulePath(config.modulePath)) as CheckerModule;
-  const fn = mod[config.exportName];
-  if (typeof fn !== 'function') {
-    throw new Error(`未找到 ${platform} 检测器`);
-  }
-  checkerFnCache.set(platform, fn);
-  return fn;
-}
 
 export function normalizeNetdiskCheckUrl(url: string) {
   return url.trim().replace(/\s+/g, '').replace(/\/+$/, '');
@@ -156,7 +139,10 @@ export async function checkNetdiskLink(platform: NetdiskCheckPlatform, url: stri
   const runner = (async () => {
     const startedAt = Date.now();
     try {
-      const checker = getChecker(platform);
+      const checker = CHECKERS[platform];
+      if (typeof checker !== 'function') {
+        throw new Error(`未找到 ${platform} 检测器`);
+      }
       const raw = await checker(normalizedUrl);
       const finalResult = toFinalResult(platform, url, normalizedUrl, raw, Date.now() - startedAt);
       setCachedNetdiskCheckResult(cacheKey, finalResult);

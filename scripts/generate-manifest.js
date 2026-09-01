@@ -11,20 +11,26 @@ const publicDir = path.join(projectRoot, 'public');
 const manifestPath = path.join(publicDir, 'manifest.json');
 
 // 从环境变量获取站点名称
-const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'MoonTVPlus';
+const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'f.foxai';
 
 // manifest.json 模板
+// Apple 状态栏等配置应写在 HTML meta（layout appleWebApp），非标准 manifest 字段浏览器会忽略
 const manifestTemplate = {
-  name: siteName,
+  name: siteName === 'f.foxai' ? 'f.foxai 影视' : siteName,
   short_name: siteName,
   description: '影视聚合',
   start_url: '/',
   scope: '/',
   display: 'standalone',
-  background_color: '#000000',
-  'apple-mobile-web-app-capable': 'yes',
-  'apple-mobile-web-app-status-bar-style': 'black',
+  background_color: '#0b0d12',
+  theme_color: '#E2571F', // foxai Ember — 见 LOGO.html 规范
   icons: [
+    {
+      src: '/favicon.svg',
+      sizes: 'any',
+      type: 'image/svg+xml',
+      purpose: 'any',
+    },
     {
       src: '/icons/icon-192x192.png',
       sizes: '192x192',

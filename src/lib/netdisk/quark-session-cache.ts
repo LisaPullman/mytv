@@ -8,6 +8,12 @@ export interface QuarkNetdiskSessionFile {
   pdirFid?: string;
 }
 
+export interface QuarkPlayUrlCacheItem {
+  name: string;
+  url: string;
+  priority: number;
+}
+
 export interface QuarkNetdiskSession {
   id: string;
   provider: 'quark';
@@ -18,6 +24,7 @@ export interface QuarkNetdiskSession {
   shareToken: string;
   files: QuarkNetdiskSessionFile[];
   savedFileIds: Record<string, string>;
+  playUrlCaches: Record<string, { urls: QuarkPlayUrlCacheItem[]; expiresAt: number }>;
   playFolderFid?: string;
   playFolderPath?: string;
   createdAt: number;
@@ -82,6 +89,7 @@ export function createQuarkNetdiskSession(input: {
     shareToken: input.shareToken,
     files: input.files,
     savedFileIds: {},
+    playUrlCaches: {},
     createdAt: now,
     expiresAt: now + TTL_MS,
   };
@@ -107,4 +115,3 @@ export function refreshQuarkNetdiskSession(id: string): QuarkNetdiskSession | nu
   sessionStore.set(id, session);
   return session;
 }
-

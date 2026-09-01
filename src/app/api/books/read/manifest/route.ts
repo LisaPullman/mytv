@@ -2,13 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { BookAcquisitionLink } from '@/lib/book.types';
 import { db } from '@/lib/db';
-import { opdsClient } from '@/lib/opds.client';
+import { bookProvider } from '@/lib/book-provider';
 
 import { getAuthorizedBooksUsername } from '../../_utils';
-
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
-
 
 export const runtime = 'nodejs';
 
@@ -17,7 +13,7 @@ type ManifestPayload = {
   bookId?: string;
   href?: string;
   acquisitionHref?: string;
-  format?: 'epub' | 'pdf' | null;
+  format?: 'epub' | 'pdf' | 'chapters' | null;
   title?: string;
   author?: string;
   cover?: string;
@@ -49,12 +45,12 @@ async function resolveManifest(username: string, payload: ManifestPayload) {
     const fallbackAcquisitionLinks: BookAcquisitionLink[] = resolvedAcquisitionHref
       ? [{
           rel: 'http://opds-spec.org/acquisition',
-          type: resolvedFormat === 'pdf' ? 'application/pdf' : 'application/epub+zip',
+          type: resolvedFormat === 'chapters' ? 'application/x-legado-chapters+json' : resolvedFormat === 'pdf' ? 'application/pdf' : 'application/epub+zip',
           href: resolvedAcquisitionHref,
         }]
       : [];
 
-    const detail = await opdsClient.getBookDetail(sourceId, resolvedHref || '', {
+    const detail = await bookProvider.getBookDetail(sourceId, resolvedHref || '', {
       id: bookId || resolvedAcquisitionHref || undefined,
       title: payload.title || existingRecord?.title || shelfItem?.title || undefined,
       author: payload.author || existingRecord?.author || shelfItem?.author || undefined,
@@ -64,9 +60,9 @@ async function resolveManifest(username: string, payload: ManifestPayload) {
       acquisitionLinks: fallbackAcquisitionLinks,
     });
     const preferred = resolvedHref
-      ? await opdsClient.getPreferredAcquisition(sourceId, resolvedHref)
+      ? await bookProvider.getPreferredAcquisition(sourceId, resolvedHref)
       : {
-          format: resolvedFormat === 'pdf' ? 'pdf' : 'epub',
+          format: resolvedFormat === 'chapters' ? 'chapters' : resolvedFormat === 'pdf' ? 'pdf' : 'epub',
           href: resolvedAcquisitionHref || '',
         };
     const lastRecord = await db.getBookReadRecord(username, sourceId, detail.id);
@@ -74,7 +70,8 @@ async function resolveManifest(username: string, payload: ManifestPayload) {
     return NextResponse.json({
       book: detail,
       format: preferred.format,
-      fileUrl: `/api/books/file?sourceId=${encodeURIComponent(sourceId)}&bookId=${encodeURIComponent(detail.id)}&format=${encodeURIComponent(preferred.format)}`,
+      fileUrl: preferred.format === 'chapters' ? undefined : `/api/books/file?sourceId=${encodeURIComponent(sourceId)}&bookId=${encodeURIComponent(detail.id)}&format=${encodeURIComponent(preferred.format)}`,
+      chaptersUrl: preferred.format === 'chapters' ? `/api/books/read/chapters?sourceId=${encodeURIComponent(sourceId)}&bookId=${encodeURIComponent(detail.id)}` : undefined,
       acquisitionHref: preferred.href,
       cacheKey: `${sourceId}::${detail.id}::${preferred.format}`,
       coverUrl: detail.cover,

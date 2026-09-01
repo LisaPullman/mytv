@@ -7,10 +7,6 @@ import { getConfig } from '@/lib/config';
 import { requireFeaturePermission } from '@/lib/permissions';
 import { OpenListClient } from '@/lib/openlist.client';
 
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
-
-
 export const runtime = 'nodejs';
 
 /**
@@ -103,6 +99,12 @@ export async function GET(request: NextRequest) {
     const folderPath = folderName;
     const filePath = `${folderPath}/${fileName}`;
 
+    const { resolvePathMeta } = await import('@/lib/openlist-path-meta');
+    const pathMetaResolved = resolvePathMeta(
+      folderPath,
+      openListConfig.PathMeta
+    );
+
     const client = new OpenListClient(
       openListConfig.URL,
       openListConfig.Username,
@@ -134,7 +136,11 @@ export async function GET(request: NextRequest) {
           throw new Error('获取到的播放链接为空');
         }
 
-        return NextResponse.json({ url: finalUrl });
+        return NextResponse.json({
+          url: finalUrl,
+          refresh14m: pathMetaResolved.refresh14m,
+          category: pathMetaResolved.category,
+        });
       }
 
       // 检查URL是否为空
@@ -187,6 +193,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
           url: resolvedQualities[0].url,
           qualities: resolvedQualities,
+          refresh14m: pathMetaResolved.refresh14m,
+          category: pathMetaResolved.category,
         });
       }
 
@@ -219,7 +227,11 @@ export async function GET(request: NextRequest) {
           throw new Error('获取到的播放链接为空');
         }
 
-        return NextResponse.json({ url: finalUrl });
+        return NextResponse.json({
+          url: finalUrl,
+          refresh14m: pathMetaResolved.refresh14m,
+          category: pathMetaResolved.category,
+        });
       }
 
       // 检查URL是否为空

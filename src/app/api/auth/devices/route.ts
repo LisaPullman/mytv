@@ -2,16 +2,14 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
+import { invalidateDeviceAccessToken, invalidateUserAccessTokens } from '@/lib/access-token-invalidation';
 import { getAuthInfoFromCookie } from '@/lib/auth';
+import { getStorage } from '@/lib/db';
 import {
   getUserDevices,
   revokeAllRefreshTokens,
   revokeRefreshToken,
 } from '@/lib/refresh-token';
-
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
-
 
 export const runtime = 'nodejs';
 
@@ -54,7 +52,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Token ID required' }, { status: 400 });
     }
 
+    invalidateDeviceAccessToken(authInfo.username, tokenId);
     await revokeRefreshToken(authInfo.username, tokenId);
+    const storage = getStorage();
+    await storage.deletePushSubscriptionsByTokenId?.(authInfo.username, tokenId);
 
     return NextResponse.json({ ok: true });
   } catch (error) {
@@ -72,7 +73,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    invalidateUserAccessTokens(authInfo.username);
     await revokeAllRefreshTokens(authInfo.username);
+    const storage = getStorage();
+    await storage.deleteAllPushSubscriptions?.(authInfo.username);
 
     const response = NextResponse.json({ ok: true });
 

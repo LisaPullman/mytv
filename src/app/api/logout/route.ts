@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { invalidateDeviceAccessToken } from '@/lib/access-token-invalidation';
 import { getAuthInfoFromCookie } from '@/lib/auth';
+import { getStorage } from '@/lib/db';
 import { revokeRefreshToken } from '@/lib/refresh-token';
-
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
-
 
 export const runtime = 'nodejs';
 
@@ -15,7 +13,10 @@ export async function POST(request: NextRequest) {
   // 撤销当前设备的 Refresh Token
   if (authInfo && authInfo.username && authInfo.tokenId) {
     try {
+      invalidateDeviceAccessToken(authInfo.username, authInfo.tokenId);
       await revokeRefreshToken(authInfo.username, authInfo.tokenId);
+      const storage = getStorage();
+      await storage.deletePushSubscriptionsByTokenId?.(authInfo.username, authInfo.tokenId);
     } catch (error) {
       console.error('Failed to revoke refresh token:', error);
     }

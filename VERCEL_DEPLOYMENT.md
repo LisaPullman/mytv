@@ -12,8 +12,11 @@
 |--------|------|--------|
 | `NEXT_PUBLIC_STORAGE_TYPE` | 存储类型 | `postgres` |
 | `POSTGRES_URL` | Vercel Postgres 连接字符串 | `postgres://...` |
-| `USERNAME` | 管理员用户名 | `admin` |
-| `PASSWORD` | 管理员密码 | `your_password` |
+| `USERNAME` | 管理员用户名（不设置时内置默认 `admin`） | `admin` |
+| `PASSWORD` | 管理员密码（不设置时内置默认 `20200108`） | `your_password` |
+
+> **内置默认凭据（foxai）**：未配置环境变量时，站点开箱即用管理员 `admin` / `20200108`，
+> 普通访客打开首页同样需要输入该密码。正式对外使用请务必在 Vercel 环境变量中改为强密码。
 
 ### Vercel Postgres 连接字符串
 

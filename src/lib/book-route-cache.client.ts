@@ -16,7 +16,7 @@ export interface BookRouteCacheItem {
   detailHref?: string;
   acquisitionHref?: string;
   acquisitionLinks?: BookAcquisitionLink[];
-  format?: 'epub' | 'pdf';
+  format?: 'epub' | 'pdf' | 'chapters';
   updatedAt: number;
 }
 
@@ -76,7 +76,10 @@ export function cacheBookListItem(item: BookListItem) {
 }
 
 export function cacheBookDetail(detail: BookDetail) {
-  const readable = detail.acquisitionLinks.find((item) => item.type.toLowerCase().includes('epub') || item.type.toLowerCase().includes('pdf'));
+  const readable = detail.acquisitionLinks.find((item) => {
+    const type = item.type.toLowerCase();
+    return type.includes('epub') || type.includes('pdf') || type.includes('legado-chapters') || item.rel === 'legado:chapters';
+  });
   saveBookRouteCache({
     sourceId: detail.sourceId,
     bookId: detail.id,
@@ -87,7 +90,7 @@ export function cacheBookDetail(detail: BookDetail) {
     summary: detail.summary,
     detailHref: detail.detailHref,
     acquisitionHref: readable?.href,
-    format: readable?.type.toLowerCase().includes('pdf') ? 'pdf' : readable ? 'epub' : undefined,
+    format: readable?.type.toLowerCase().includes('pdf') ? 'pdf' : readable?.type.toLowerCase().includes('legado-chapters') || readable?.rel === 'legado:chapters' ? 'chapters' : readable ? 'epub' : undefined,
     acquisitionLinks: detail.acquisitionLinks,
   });
 }
@@ -124,6 +127,11 @@ export function buildBookDetailPath(sourceId: string, bookId: string) {
   return `/books/detail?sourceId=${encodeURIComponent(sourceId)}&bookId=${encodeURIComponent(bookId)}`;
 }
 
-export function buildBookReadPath(sourceId: string, bookId: string) {
-  return `/books/read?sourceId=${encodeURIComponent(sourceId)}&bookId=${encodeURIComponent(bookId)}`;
+export function buildBookReadPath(sourceId: string, bookId: string, chapterHref?: string) {
+  const params = new URLSearchParams({
+    sourceId,
+    bookId,
+  });
+  if (chapterHref) params.set('chapterHref', chapterHref);
+  return `/books/read?${params.toString()}`;
 }

@@ -8,10 +8,6 @@ import { db } from '@/lib/db';
 import { EmbyClient } from '@/lib/emby.client';
 import { clearEmbyCache } from '@/lib/emby-cache';
 
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
-
-
 export const runtime = 'nodejs';
 
 /**
@@ -31,7 +27,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { action, ServerURL, ApiKey, Username, Password } = body;
+    const { action, ServerURL, ApiKey, Username, Password, embyAuthorizationHeader } = body;
 
     const authInfo = getAuthInfoFromCookie(request);
     if (!authInfo || !authInfo.username) {
@@ -68,6 +64,7 @@ export async function POST(request: NextRequest) {
         ApiKey,
         Username,
         Password,
+        embyAuthorizationHeader,
       };
 
       const client = new EmbyClient(testConfig);

@@ -5,10 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
-
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
-
+import { normalizeApiBaseUrl } from '@/lib/url';
 
 export const runtime = 'nodejs';
 
@@ -39,6 +36,7 @@ export async function POST(request: NextRequest) {
       OpenAIBaseURL,
       OpenAIModel,
       ClaudeApiKey,
+      ClaudeBaseURL,
       ClaudeModel,
       CustomApiKey,
       CustomBaseURL,
@@ -58,6 +56,10 @@ export async function POST(request: NextRequest) {
       TavilyApiKey,
       SerperApiKey,
       SerpApiKey,
+      EnableNewMode,
+      NewProtocol,
+      MaxContext,
+      CompressThreshold,
       EnableHomepageEntry,
       EnableVideoCardEntry,
       EnablePlayPageEntry,
@@ -75,6 +77,7 @@ export async function POST(request: NextRequest) {
       OpenAIBaseURL?: string;
       OpenAIModel?: string;
       ClaudeApiKey?: string;
+      ClaudeBaseURL?: string;
       ClaudeModel?: string;
       CustomApiKey?: string;
       CustomBaseURL?: string;
@@ -90,10 +93,14 @@ export async function POST(request: NextRequest) {
       DecisionCustomBaseURL?: string;
       DecisionCustomModel?: string;
       EnableWebSearch: boolean;
-      WebSearchProvider?: 'tavily' | 'serper' | 'serpapi';
+      WebSearchProvider?: 'tavily' | 'serper' | 'serpapi' | 'bing';
       TavilyApiKey?: string;
       SerperApiKey?: string;
       SerpApiKey?: string;
+      EnableNewMode?: boolean;
+      NewProtocol?: 'openai-completions' | 'openai-responses' | 'claude';
+      MaxContext?: number;
+      CompressThreshold?: number;
       EnableHomepageEntry: boolean;
       EnableVideoCardEntry: boolean;
       EnablePlayPageEntry: boolean;
@@ -114,6 +121,7 @@ export async function POST(request: NextRequest) {
       (OpenAIBaseURL !== undefined && typeof OpenAIBaseURL !== 'string') ||
       (OpenAIModel !== undefined && typeof OpenAIModel !== 'string') ||
       (ClaudeApiKey !== undefined && typeof ClaudeApiKey !== 'string') ||
+      (ClaudeBaseURL !== undefined && typeof ClaudeBaseURL !== 'string') ||
       (ClaudeModel !== undefined && typeof ClaudeModel !== 'string') ||
       (CustomApiKey !== undefined && typeof CustomApiKey !== 'string') ||
       (CustomBaseURL !== undefined && typeof CustomBaseURL !== 'string') ||
@@ -129,10 +137,18 @@ export async function POST(request: NextRequest) {
       (DecisionCustomBaseURL !== undefined && typeof DecisionCustomBaseURL !== 'string') ||
       (DecisionCustomModel !== undefined && typeof DecisionCustomModel !== 'string') ||
       typeof EnableWebSearch !== 'boolean' ||
-      (WebSearchProvider !== undefined && !['tavily', 'serper', 'serpapi'].includes(WebSearchProvider)) ||
+      (WebSearchProvider !== undefined && !['tavily', 'serper', 'serpapi', 'bing'].includes(WebSearchProvider)) ||
       (TavilyApiKey !== undefined && typeof TavilyApiKey !== 'string') ||
       (SerperApiKey !== undefined && typeof SerperApiKey !== 'string') ||
       (SerpApiKey !== undefined && typeof SerpApiKey !== 'string') ||
+      (EnableNewMode !== undefined && typeof EnableNewMode !== 'boolean') ||
+      (NewProtocol !== undefined &&
+        !['openai-completions', 'openai-responses', 'claude'].includes(NewProtocol)) ||
+      (MaxContext !== undefined && (typeof MaxContext !== 'number' || MaxContext <= 0)) ||
+      (CompressThreshold !== undefined &&
+        (typeof CompressThreshold !== 'number' ||
+          CompressThreshold < 0 ||
+          CompressThreshold > 100)) ||
       typeof EnableHomepageEntry !== 'boolean' ||
       typeof EnableVideoCardEntry !== 'boolean' ||
       typeof EnablePlayPageEntry !== 'boolean' ||
@@ -160,28 +176,33 @@ export async function POST(request: NextRequest) {
       Enabled,
       Provider,
       OpenAIApiKey,
-      OpenAIBaseURL,
+      OpenAIBaseURL: normalizeApiBaseUrl(OpenAIBaseURL),
       OpenAIModel,
       ClaudeApiKey,
+      ClaudeBaseURL: normalizeApiBaseUrl(ClaudeBaseURL),
       ClaudeModel,
       CustomApiKey,
-      CustomBaseURL,
+      CustomBaseURL: normalizeApiBaseUrl(CustomBaseURL),
       CustomModel,
       EnableDecisionModel,
       DecisionProvider,
       DecisionOpenAIApiKey,
-      DecisionOpenAIBaseURL,
+      DecisionOpenAIBaseURL: normalizeApiBaseUrl(DecisionOpenAIBaseURL),
       DecisionOpenAIModel,
       DecisionClaudeApiKey,
       DecisionClaudeModel,
       DecisionCustomApiKey,
-      DecisionCustomBaseURL,
+      DecisionCustomBaseURL: normalizeApiBaseUrl(DecisionCustomBaseURL),
       DecisionCustomModel,
       EnableWebSearch,
       WebSearchProvider,
       TavilyApiKey,
       SerperApiKey,
       SerpApiKey,
+      EnableNewMode,
+      NewProtocol,
+      MaxContext,
+      CompressThreshold,
       EnableHomepageEntry,
       EnableVideoCardEntry,
       EnablePlayPageEntry,
@@ -196,6 +217,9 @@ export async function POST(request: NextRequest) {
 
     // 写入数据库
     await db.saveAdminConfig(adminConfig);
+    // 刷新内存缓存，确保后续 getConfig() 立即读到最新配置（与其他 admin 路由一致）
+    const { setCachedConfig } = await import('@/lib/config');
+    await setCachedConfig(adminConfig);
 
     return NextResponse.json(
       { ok: true },

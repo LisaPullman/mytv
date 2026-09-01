@@ -3,10 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { requireFeaturePermission } from '@/lib/permissions';
 
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
-
-
 function getAntiCode(oldAntiCode: string, streamName: string): string {
   const paramsT = 100;
   const sdkVersion = 2403051612;

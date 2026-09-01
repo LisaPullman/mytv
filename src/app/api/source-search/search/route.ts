@@ -4,10 +4,6 @@ import { getAuthInfoFromCookie } from '@/lib/auth';
 import { API_CONFIG, getAvailableApiSites } from '@/lib/config';
 import { SearchResult } from '@/lib/types';
 
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
-
-
 export const runtime = 'nodejs';
 
 interface CmsVideoItem {
@@ -56,7 +52,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const apiSites = await getAvailableApiSites(authInfo.username);
+    const includeSpecialSources = request.nextUrl.searchParams.get('special') === '1';
+    const apiSites = await getAvailableApiSites(authInfo.username, includeSpecialSources);
     const targetSite = apiSites.find((site) => site.key === sourceKey);
 
     if (!targetSite) {

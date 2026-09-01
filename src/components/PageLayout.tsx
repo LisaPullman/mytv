@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { BackButton } from './BackButton';
@@ -18,8 +19,14 @@ interface PageLayoutProps {
 }
 
 const PageLayout = ({ children, activePath = '/', hideNavigation = false }: PageLayoutProps) => {
+  const router = useRouter();
   const [backgroundImage, setBackgroundImage] = useState('');
   const shouldShowSharedBackground = !hideNavigation && activePath !== '/play';
+
+  useEffect(() => {
+    router.prefetch('/search');
+    router.prefetch('/play');
+  }, [router]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !shouldShowSharedBackground) {
@@ -62,24 +69,8 @@ const PageLayout = ({ children, activePath = '/', hideNavigation = false }: Page
               className='absolute inset-0 pointer-events-none bg-cover bg-center bg-no-repeat opacity-45'
               style={{ backgroundImage: `url(${backgroundImage})` }}
             />
-            <div className='absolute inset-0 pointer-events-none bg-white/40 dark:bg-black/40 backdrop-blur-[2px]' />
+            <div className='absolute inset-0 pointer-events-none bg-white/50 dark:bg-gray-950/50' />
           </>
-        )}
-
-        {/* foxai aurora — slow-rotating conic mesh sits behind everything.
-            Blurred so it reads as ambient light, not as a graphic. */}
-        {shouldShowSharedBackground && (
-          <div
-            className='aurora absolute -top-40 -right-40 w-[60vw] h-[60vw] max-w-[800px] max-h-[800px] rounded-full pointer-events-none animate-aurora-spin'
-            aria-hidden='true'
-          />
-        )}
-        {shouldShowSharedBackground && (
-          <div
-            className='aurora absolute -bottom-40 -left-40 w-[50vw] h-[50vw] max-w-[700px] max-h-[700px] rounded-full pointer-events-none animate-aurora-spin'
-            style={{ animationDirection: 'reverse', animationDuration: '32s' }}
-            aria-hidden='true'
-          />
         )}
 
         {/* 移动端头部 */}
@@ -116,7 +107,7 @@ const PageLayout = ({ children, activePath = '/', hideNavigation = false }: Page
 
             {/* 主内容 */}
             <main
-              className='flex-1 md:min-h-0 mb-14 md:mb-0 md:mt-0 mt-12'
+              className='flex-1 md:min-h-0 mb-14 md:mb-0 md:mt-0 mt-[calc(3rem+env(safe-area-inset-top))]'
               style={{
                 paddingBottom: 'calc(3.5rem + env(safe-area-inset-bottom))',
               }}

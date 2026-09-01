@@ -8,10 +8,6 @@ import {
   searchTMDBMulti,
 } from '@/lib/tmdb.client';
 
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
-
-
 // 服务器端缓存（内存）
 const searchCache = new Map<
   string,

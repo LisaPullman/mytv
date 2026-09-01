@@ -111,9 +111,28 @@ function isNavigationLink(link: ParsedFeedLink): boolean {
   return isNavigationRel(link.rel) || type.includes('kind=navigation') || (type.includes('opds-catalog') && !isAcquisitionRel(link.rel));
 }
 
+function isCoverRel(rel?: string): boolean {
+  if (!rel) return false;
+  const normalized = rel.toLowerCase();
+  return normalized.includes('opds-spec.org/cover')
+    || normalized.includes('opds-spec.org/image')
+    || normalized.includes('image/thumbnail')
+    || normalized === 'thumbnail'
+    || normalized === 'cover';
+}
+
+function isImageType(type?: string): boolean {
+  return !!type && type.toLowerCase().startsWith('image/');
+}
+
 function pickCoverLink(links: ParsedFeedLink[]): string | undefined {
-  const cover = links.find((link) => link.rel?.includes('image/thumbnail'))
-    || links.find((link) => link.rel?.includes('image'));
+  const thumbnail = links.find((link) => {
+    const rel = (link.rel || '').toLowerCase();
+    return rel.includes('thumbnail') && (isCoverRel(link.rel) || isImageType(link.type));
+  });
+  const cover = thumbnail
+    || links.find((link) => isCoverRel(link.rel))
+    || links.find((link) => isImageType(link.type) && !isAcquisitionRel(link.rel));
   return cover?.href;
 }
 
@@ -215,7 +234,7 @@ async function resolveOPDSConfig(): Promise<ResolvedOPDSConfig> {
   return {
     enabled,
     cacheTTL,
-    sources: (sources || []).filter((source) => !!source?.url && source.enabled !== false),
+    sources: (sources || []).filter((source) => !!source?.url && source.enabled !== false && (source.type || 'opds') === 'opds' && !source.legado),
   };
 }
 
@@ -465,17 +484,26 @@ export class OPDSClient {
     };
   }
 
+  async getSearchSources(sourceId?: string): Promise<BookSource[]> {
+    return sourceId ? [await getSourceById(sourceId)] : (await resolveOPDSConfig()).sources;
+  }
+
+  async searchBooksSource(q: string, source: BookSource): Promise<{ source: BookSource; results: BookListItem[] }> {
+    const targetUrl = await resolveSearchTargetUrl(source, q);
+    if (!targetUrl) throw new Error('未配置可用的搜索地址');
+    const feed = await getFeed(source, targetUrl);
+    return { source, results: feed.entries.map((entry) => mapEntryToItem(source, entry)) };
+  }
+
   async searchBooks(q: string, sourceId?: string): Promise<BookSearchResult> {
-    const sources = sourceId ? [await getSourceById(sourceId)] : (await resolveOPDSConfig()).sources;
+    const sources = await this.getSearchSources(sourceId);
     const results: BookListItem[] = [];
     const failedSources: BookSearchFailure[] = [];
 
     await Promise.all(sources.map(async (source) => {
       try {
-        const targetUrl = await resolveSearchTargetUrl(source, q);
-        if (!targetUrl) throw new Error('未配置可用的搜索地址');
-        const feed = await getFeed(source, targetUrl);
-        results.push(...feed.entries.map((entry) => mapEntryToItem(source, entry)));
+        const sourceResult = await this.searchBooksSource(q, source);
+        results.push(...sourceResult.results);
       } catch (error) {
         failedSources.push({ sourceId: source.id, sourceName: source.name, error: (error as Error).message });
       }

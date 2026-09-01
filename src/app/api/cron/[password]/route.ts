@@ -8,16 +8,17 @@ import { db, getStorage } from '@/lib/db';
 import { EmailService } from '@/lib/email.service';
 import {
   FavoriteUpdate,
-  MangaShelfUpdate,
   getBatchFavoriteUpdateEmailTemplate,
   getBatchMangaUpdateEmailTemplate,
+  MangaShelfUpdate,
 } from '@/lib/email.templates';
-
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
-
 import { fetchVideoDetail } from '@/lib/fetchVideoDetail';
-import { refreshLiveChannels } from '@/lib/live';
+import {
+  getLastGlobalLiveRefreshTime,
+  getLiveRefreshIntervalHours,
+  refreshLiveChannels,
+  setLastGlobalLiveRefreshTime,
+} from '@/lib/live';
 import { MangaChapter, MangaShelfItem } from '@/lib/manga.types';
 import { startOpenListRefresh } from '@/lib/openlist-refresh';
 import { getSuwayomiConfig, loginWithSimpleAuth, SuwayomiClient } from '@/lib/suwayomi.client';
@@ -240,6 +241,17 @@ async function cronJob() {
 
 async function refreshAllLiveChannels() {
   const config = await getConfig();
+  const refreshIntervalHours = getLiveRefreshIntervalHours(config.LiveRefreshIntervalHours);
+  const lastRefreshTime = getLastGlobalLiveRefreshTime();
+  const now = Date.now();
+  const intervalMs = refreshIntervalHours * 60 * 60 * 1000;
+  const timeSinceLastRefresh = now - lastRefreshTime;
+
+  if (lastRefreshTime > 0 && timeSinceLastRefresh < intervalMs) {
+    const remainingHours = Math.ceil((intervalMs - timeSinceLastRefresh) / (60 * 60 * 1000));
+    console.log(`跳过刷新电视直播：距离上次刷新仅 ${Math.floor(timeSinceLastRefresh / (60 * 60 * 1000))} 小时，还需等待 ${remainingHours} 小时`);
+    return;
+  }
 
   // 并发刷新所有启用的直播源
   const refreshPromises = (config.LiveConfig || [])
@@ -256,6 +268,8 @@ async function refreshAllLiveChannels() {
 
   // 等待所有刷新任务完成
   await Promise.all(refreshPromises);
+
+  setLastGlobalLiveRefreshTime(Date.now());
 
   // 保存配置
   await db.saveAdminConfig(config);
@@ -469,6 +483,7 @@ async function refreshRecordAndFavorites() {
                 save_time: record.save_time,
                 search_title: record.search_title,
                 new_episodes: updatedNewEpisodes > 0 ? updatedNewEpisodes : undefined,
+                is_anime: record.is_anime,
               });
               console.log(
                 `更新播放记录: ${record.title} (${record.total_episodes} -> ${episodeCount}, 新增 ${newEpisodesCount} 集)`

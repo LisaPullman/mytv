@@ -7,10 +7,6 @@ import { getConfig } from '@/lib/config';
 import { requireFeaturePermission } from '@/lib/permissions';
 import { startOpenListRefresh } from '@/lib/openlist-refresh';
 
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
-
-
 export const runtime = 'nodejs';
 
 /**

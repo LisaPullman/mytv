@@ -10,10 +10,9 @@ import type { SVGProps } from 'react';
  *   • crossbar (request) M12.5 31h21
  *   • endpoint dot       circle(49, 9, r=5.5)
  *
- * The lockup "f.foxai" pairs the bare mark with the wordmark
- * (where the "ai" suffix picks up the brand accent), separated by a
- * middle-dot so the brand reads as one monogram. Strokes inherit
- * currentColor (or --brand) so the lockup can sit on any surface.
+ * The lockup pairs the bare mark (currentColor) with the "foxai" wordmark,
+ * where the "ai" suffix picks up the brand accent. Strokes inherit
+ * currentColor so the lockup can sit on any surface.
  */
 
 const PATHS = (
@@ -95,49 +94,35 @@ export function FoxTile({ size = 24, title, className, ...rest }: LogoProps) {
 }
 
 /**
- * f.foxai lockup — mark + middle-dot + wordmark ("ai" in brand accent).
- * Designed to be the default site identity at all sizes ≥ 16 px.
+ * foxai lockup — "Trace" mark (currentColor) + "foxai" wordmark where the
+ * "ai" suffix picks up the brand accent. Per LOGO.html §2.3: no chip, no
+ * outline, the mark inherits the surrounding ink so it sits calmly beside
+ * the wordmark. Site name may stay "f.foxai" — the lockup itself is Mark +
+ * "foxai", never "f.foxai".
  */
 export function FoxLockup({
   size = 24,
   title,
   className,
-  brandDotClassName,
   ...rest
 }: Omit<LogoProps, 'size'> & {
   size?: number;
-  /** Optional class for the middle-dot separator (between mark and wordmark). */
-  brandDotClassName?: string;
 }) {
   const wordSize = Math.max(10, Math.round(size * 0.6));
-  const gap = Math.max(4, Math.round(size * 0.18));
+  const gap = Math.max(4, Math.round(size * 0.3));
   return (
     <span
       className={`inline-flex items-center ${className ?? ''}`}
-      style={{ gap }}
+      style={{ gap, color: 'var(--ink)' }}
       {...(rest as any)}
     >
       <FoxMark size={size} title={title} />
-      <span
-        aria-hidden='true'
-        className={`text-[color:var(--ink-soft)] ${
-          brandDotClassName ?? ''
-        }`}
-        style={{
-          fontSize: wordSize,
-          lineHeight: 1,
-          fontWeight: 400,
-        }}
-      >
-        .
-      </span>
       <span
         style={{
           fontWeight: 600,
           letterSpacing: '-0.01em',
           fontSize: wordSize,
           lineHeight: 1,
-          color: 'var(--ink)',
         }}
       >
         fox<span style={{ color: 'var(--brand)' }}>ai</span>

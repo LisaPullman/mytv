@@ -2,16 +2,16 @@
 
 'use client';
 
-import { AlertCircle, CheckCircle, Eye, EyeOff, User, Lock } from 'lucide-react';
+import { AlertCircle, CheckCircle, Eye, EyeOff, Send, User, Lock } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
 import { CURRENT_VERSION } from '@/lib/version';
 import { checkForUpdates, UpdateStatus } from '@/lib/version_check';
 
+import { FoxMark } from '@/components/Logo';
 import { useSite } from '@/components/SiteProvider';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { FoxMark } from '@/components/Logo';
 
 // 版本显示组件
 function VersionDisplay() {
@@ -84,6 +84,8 @@ function RegisterPageClient() {
   const [siteConfig, setSiteConfig] = useState<any>(null);
   const [turnstileWidgetId, setTurnstileWidgetId] = useState<string | null>(null);
   const [backgroundImage, setBackgroundImage] = useState<string>('');
+  const [registerSuccess, setRegisterSuccess] = useState(false);
+  const [telegramBind, setTelegramBind] = useState<{ code: string; deepLink?: string } | null>(null);
 
   const { siteName } = useSite();
 
@@ -205,6 +207,16 @@ function RegisterPageClient() {
       });
 
       if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.telegramBind?.code) {
+          setTelegramBind({
+            code: data.telegramBind.code,
+            deepLink: data.telegramBind.deepLink || '',
+          });
+          setRegisterSuccess(true);
+          return;
+        }
+
         // 注册成功，跳转到登录页
         const redirect = searchParams.get('redirect') || '/login';
         router.replace(redirect);
@@ -260,38 +272,71 @@ function RegisterPageClient() {
         <ThemeToggle />
       </div>
       <div className='relative z-10 w-full max-w-md rounded-3xl bg-gradient-to-b from-white/90 via-white/70 to-white/40 dark:from-zinc-900/90 dark:via-zinc-900/70 dark:to-zinc-900/40 shadow-2xl p-10 dark:border dark:border-zinc-800 edge-highlight'>
+        {/* foxai lockup — bare "Trace" mark (currentColor) + wordmark where
+            the "ai" suffix picks up the brand accent. Per LOGO.html §2.3. */}
         <div className='flex items-center justify-center mb-2'>
-          <div className='flex items-center gap-2'>
+          <div
+            className='flex items-center gap-2'
+            style={{ color: 'var(--ink)' }}
+          >
+            <FoxMark size={30} title={siteName || 'foxai'} />
             <span
-              className='relative inline-flex items-center justify-center rounded-xl p-1.5 glow-brand-soft'
               style={{
-                background:
-                  'linear-gradient(135deg, color-mix(in oklch, var(--brand) 18%, transparent), color-mix(in oklch, var(--brand) 4%, transparent))',
-                border: '1px solid color-mix(in oklch, var(--brand) 28%, transparent)',
+                fontWeight: 600,
+                letterSpacing: '-0.01em',
+                fontSize: 19,
+                lineHeight: 1,
               }}
             >
-              <FoxMark size={28} title={siteName || 'f.foxai'} />
-            </span>
-            <span
-              className='inline-flex items-baseline gap-1 text-3xl font-semibold tracking-tight'
-              style={{ letterSpacing: '-0.01em', color: 'var(--ink)' }}
-            >
-              <span>f</span>
-              <span
-                aria-hidden='true'
-                className='text-[color:var(--ink-soft)] font-light'
-              >
-                .
-              </span>
-              <span>
-                fox<span style={{ color: 'var(--brand)' }}>ai</span>
-              </span>
+              fox<span style={{ color: 'var(--brand)' }}>ai</span>
             </span>
           </div>
         </div>
         <p className='text-center text-sm text-gray-600 dark:text-gray-400 mb-8'>
           创建新账号
         </p>
+        {registerSuccess ? (
+          <div className='space-y-5'>
+            <div className='rounded-2xl border border-green-200 bg-green-50 p-4 text-green-800 dark:border-green-800 dark:bg-green-900/30 dark:text-green-200'>
+              <div className='mb-2 flex items-center gap-2 font-semibold'>
+                <CheckCircle className='h-5 w-5' />
+                注册成功
+              </div>
+              <p className='text-sm'>账号已创建。你可以现在绑定 Telegram，用于接收通知和后续快捷登录。</p>
+            </div>
+
+            {telegramBind && (
+              <div className='rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sky-900 dark:border-sky-800 dark:bg-sky-900/30 dark:text-sky-100'>
+                <div className='mb-3 flex items-center gap-2 font-semibold'>
+                  <Send className='h-5 w-5' />
+                  Telegram 绑定
+                </div>
+                <p className='text-sm'>在 Bot 中发送：</p>
+                <div className='my-3 rounded-lg bg-white/80 px-3 py-2 font-mono text-lg font-bold tracking-widest dark:bg-zinc-900/70'>
+                  /bind {telegramBind.code}
+                </div>
+                {telegramBind.deepLink && (
+                  <button
+                    type='button'
+                    onClick={() => window.open(telegramBind.deepLink, '_blank', 'noopener,noreferrer')}
+                    className='mb-3 inline-flex w-full items-center justify-center rounded-lg bg-sky-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-700'
+                  >
+                    打开 Telegram
+                  </button>
+                )}
+                <p className='text-xs opacity-80'>绑定码 10 分钟内有效，也可稍后登录后在通知设置中重新生成。</p>
+              </div>
+            )}
+
+            <button
+              type='button'
+              onClick={() => router.replace(searchParams.get('redirect') || '/login')}
+              className='inline-flex w-full justify-center rounded-lg bg-[color:var(--brand)] py-3 text-base font-semibold text-white shadow-lg transition-all duration-200 hover:brightness-110'
+            >
+              前往登录
+            </button>
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className='space-y-6'>
           <div>
             <label htmlFor='username' className='sr-only'>
@@ -305,7 +350,7 @@ function RegisterPageClient() {
                 id='username'
                 type='text'
                 autoComplete='username'
-                className='block w-full rounded-lg border-0 py-3 pl-10 pr-4 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-green-500 focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60'
+                className='block w-full rounded-lg border-0 py-3 pl-10 pr-4 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-[color:var(--brand)] focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60'
                 placeholder='输入用户名'
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -325,7 +370,7 @@ function RegisterPageClient() {
                 id='password'
                 type={showPassword ? 'text' : 'password'}
                 autoComplete='new-password'
-                className='block w-full rounded-lg border-0 py-3 pl-10 pr-12 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-green-500 focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60'
+                className='block w-full rounded-lg border-0 py-3 pl-10 pr-12 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-[color:var(--brand)] focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60'
                 placeholder='输入密码（至少6位）'
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -356,7 +401,7 @@ function RegisterPageClient() {
                 id='confirmPassword'
                 type={showConfirmPassword ? 'text' : 'password'}
                 autoComplete='new-password'
-                className='block w-full rounded-lg border-0 py-3 pl-10 pr-12 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-green-500 focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60'
+                className='block w-full rounded-lg border-0 py-3 pl-10 pr-12 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-[color:var(--brand)] focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60'
                 placeholder='再次输入密码'
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -387,7 +432,7 @@ function RegisterPageClient() {
                 <input
                   id='inviteCode'
                   type='text'
-                  className='block w-full rounded-lg border-0 py-3 pl-10 pr-4 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-green-500 focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60'
+                  className='block w-full rounded-lg border-0 py-3 pl-10 pr-4 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-[color:var(--brand)] focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60'
                   placeholder='输入邀请码'
                   value={inviteCode}
                   onChange={(e) => setInviteCode(e.target.value)}
@@ -413,7 +458,7 @@ function RegisterPageClient() {
               (siteConfig?.RequireRegistrationInviteCode && !inviteCode.trim()) ||
               (siteConfig?.RegistrationRequireTurnstile && !turnstileToken)
             }
-            className='inline-flex w-full justify-center rounded-lg bg-green-600 py-3 text-base font-semibold text-white shadow-lg transition-all duration-200 hover:from-green-600 hover:to-blue-600 disabled:cursor-not-allowed disabled:opacity-50'
+            className='inline-flex w-full justify-center rounded-lg bg-[color:var(--brand)] py-3 text-base font-semibold text-white shadow-lg transition-all duration-200 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50'
           >
             {loading ? '注册中...' : '注册'}
           </button>
@@ -423,12 +468,13 @@ function RegisterPageClient() {
             <button
               type='button'
               onClick={() => router.push('/login')}
-              className='text-sm text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 transition-colors'
+              className='text-sm text-[color:var(--brand)] hover:brightness-90 transition-colors'
             >
               已有账号？返回登录
             </button>
           </div>
         </form>
+        )}
       </div>
 
       {/* 版本信息显示 */}

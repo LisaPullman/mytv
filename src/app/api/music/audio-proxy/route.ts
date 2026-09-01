@@ -1,29 +1,33 @@
 /* eslint-disable no-console */
+
 import { NextRequest, NextResponse } from 'next/server';
+
 import { getConfig } from '@/lib/config';
 import { requireFeaturePermission } from '@/lib/permissions';
 import { OpenListClient } from '@/lib/openlist.client';
 
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
-
-
 export const runtime = 'nodejs';
+
 // 获取 OpenList 客户端
 async function getOpenListClient(): Promise<OpenListClient | null> {
   const config = await getConfig();
   const musicConfig = config?.MusicConfig;
+
   if (!musicConfig?.OpenListCacheEnabled) {
     return null;
   }
+
   const url = musicConfig.OpenListCacheURL;
   const username = musicConfig.OpenListCacheUsername;
   const password = musicConfig.OpenListCachePassword;
+
   if (!url || !username || !password) {
     return null;
   }
+
   return new OpenListClient(url, username, password);
 }
+
 // 代理OpenList缓存的音频文件
 export async function GET(request: NextRequest) {
   try {
@@ -33,12 +37,14 @@ export async function GET(request: NextRequest) {
     const platform = searchParams.get('platform');
     const id = searchParams.get('id');
     const quality = searchParams.get('quality');
+
     if (!platform || !id || !quality) {
       return NextResponse.json(
         { error: '缺少必要参数: platform, id, quality' },
         { status: 400 }
       );
     }
+
     // 获取OpenList客户端
     const openListClient = await getOpenListClient();
     if (!openListClient) {
@@ -47,25 +53,32 @@ export async function GET(request: NextRequest) {
         { status: 503 }
       );
     }
+
     // 获取配置
     const config = await getConfig();
     const cachePath = config?.MusicConfig?.OpenListCachePath || '/music-cache';
+
     // 构建音频文件路径
     const audioPath = `${cachePath}/${platform}/audio/${id}-${quality}.mp3`;
+
     // 获取文件信息
     const fileResponse = await openListClient.getFile(audioPath);
+
     if (fileResponse.code !== 200 || !fileResponse.data?.raw_url) {
       return NextResponse.json(
         { error: '音频文件未找到' },
         { status: 404 }
       );
     }
+
     // 检查是否有 Range 请求头
     const range = request.headers.get('range');
     const ifNoneMatch = request.headers.get('if-none-match');
     const ifModifiedSince = request.headers.get('if-modified-since');
+
     // 生成基于文件路径的 ETag
     const generatedETag = `"${Buffer.from(audioPath).toString('base64')}"`;
+
     // 如果客户端发送了 If-None-Match，检查是否匹配
     if (ifNoneMatch && ifNoneMatch === generatedETag) {
       return new NextResponse(null, {
@@ -76,14 +89,17 @@ export async function GET(request: NextRequest) {
         },
       });
     }
+
     // 构建上游请求头
     const upstreamHeaders: Record<string, string> = {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
     };
+
     // 如果有 Range 请求，转发给上游
     if (range) {
       upstreamHeaders['Range'] = range;
     }
+
     // 转发条件请求头到上游
     if (ifNoneMatch) {
       upstreamHeaders['If-None-Match'] = ifNoneMatch;
@@ -91,10 +107,12 @@ export async function GET(request: NextRequest) {
     if (ifModifiedSince) {
       upstreamHeaders['If-Modified-Since'] = ifModifiedSince;
     }
+
     // 从OpenList获取音频流
     const response = await fetch(fileResponse.data.raw_url, {
       headers: upstreamHeaders,
     });
+
     // 如果上游返回 304 Not Modified，直接返回 304
     if (response.status === 304) {
       return new NextResponse(null, {
@@ -105,12 +123,14 @@ export async function GET(request: NextRequest) {
         },
       });
     }
+
     if (!response.ok && response.status !== 206) {
       return NextResponse.json(
         { error: '获取音频失败' },
         { status: response.status }
       );
     }
+
     // 获取响应头
     const contentType = response.headers.get('content-type') || 'audio/mpeg';
     const contentLength = response.headers.get('content-length');
@@ -118,6 +138,7 @@ export async function GET(request: NextRequest) {
     const acceptRanges = response.headers.get('accept-ranges');
     const etag = response.headers.get('etag');
     const lastModified = response.headers.get('last-modified');
+
     // 创建响应头 - 设置永久缓存
     const headers: Record<string, string> = {
       'Content-Type': contentType,
@@ -126,13 +147,16 @@ export async function GET(request: NextRequest) {
       'Accept-Ranges': acceptRanges || 'bytes',
       'X-Cache-Source': 'openlist-audio-proxy',
     };
+
     if (contentLength) {
       headers['Content-Length'] = contentLength;
     }
+
     // 如果上游返回了 Content-Range，转发给客户端
     if (contentRange) {
       headers['Content-Range'] = contentRange;
     }
+
     // 转发 ETag 和 Last-Modified 以支持浏览器缓存验证
     if (etag) {
       headers['ETag'] = etag;
@@ -140,10 +164,12 @@ export async function GET(request: NextRequest) {
     if (lastModified) {
       headers['Last-Modified'] = lastModified;
     }
+
     // 如果上游没有提供 ETag，使用生成的 ETag
     if (!etag) {
       headers['ETag'] = generatedETag;
     }
+
     // 返回音频流，保持原始状态码（200 或 206）
     return new NextResponse(response.body, {
       status: response.status,

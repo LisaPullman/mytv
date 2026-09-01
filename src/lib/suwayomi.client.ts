@@ -13,6 +13,7 @@ import {
   MangaSearchResult,
   MangaSource,
 } from './manga.types';
+import { normalizeApiBaseUrl } from './url';
 
 interface GraphQLResponse<T> {
   data?: T;
@@ -167,7 +168,7 @@ async function resolveSuwayomiConfig(options: SuwayomiClientOptions = {}): Promi
     throw new Error('Suwayomi 未配置，请先在管理面板或环境变量中设置服务地址');
   }
 
-  const normalizedBaseUrl = serverUrl.replace(/\/$/, '');
+  const normalizedBaseUrl = normalizeApiBaseUrl(serverUrl);
 
   return {
     serverBaseUrl: normalizedBaseUrl,
@@ -338,26 +339,39 @@ export class SuwayomiClient {
     }));
   }
 
-  async searchManga(keyword: string, sourceId?: string, page = 1): Promise<MangaSearchResult> {
+  async getSearchSources(sourceId?: string): Promise<Array<{ id: string; displayName?: string; name?: string }>> {
     const resolved = await resolveSuwayomiConfig(this.options);
-    let sources: Array<{ id: string; displayName?: string; name?: string }>;
+
     if (sourceId) {
-      sources = [{ id: sourceId, displayName: sourceId, name: sourceId }];
-    } else {
-      try {
-        sources = (await this.getSources(resolved.defaultLang)).slice(0, resolved.maxSources);
-      } catch (error) {
-        if (resolved.sourceIds.length === 0) {
-          throw error;
-        }
-        sources = resolved.sourceIds.slice(0, resolved.maxSources).map((id) => ({
-          id,
-          displayName: id,
-          name: id,
-        }));
-      }
+      const matched = (await this.getSources()).find((item) => item.id === sourceId);
+      return [
+        {
+          id: sourceId,
+          displayName: matched?.displayName || matched?.name || sourceId,
+          name: matched?.name || matched?.displayName || sourceId,
+        },
+      ];
     }
 
+    try {
+      return (await this.getSources(resolved.defaultLang)).slice(0, resolved.maxSources);
+    } catch (error) {
+      if (resolved.sourceIds.length === 0) {
+        throw error;
+      }
+      return resolved.sourceIds.slice(0, resolved.maxSources).map((id) => ({
+        id,
+        displayName: id,
+        name: id,
+      }));
+    }
+  }
+
+  async searchMangaSource(
+    keyword: string,
+    source: { id: string; displayName?: string; name?: string },
+    page = 1
+  ): Promise<{ source: { id: string; displayName?: string; name?: string }; results: MangaSearchItem[] }> {
     const query = `
       mutation GET_SOURCE_MANGAS_FETCH($input: FetchSourceMangaInput!) {
         fetchSourceManga(input: $input) {
@@ -376,6 +390,60 @@ export class SuwayomiClient {
       }
     `;
 
+    const data = await this.graphqlRequest<{
+      fetchSourceManga?: {
+        mangas?: Array<{
+          id: string | number;
+          title?: string;
+          thumbnailUrl?: string;
+          sourceId?: string | number;
+          description?: string;
+          author?: string;
+          artist?: string;
+          genre?: string;
+          status?: string;
+        }>;
+      };
+    }>(
+      query,
+      {
+        input: {
+          type: 'SEARCH',
+          source: source.id,
+          query: keyword,
+          page,
+        },
+      },
+      'GET_SOURCE_MANGAS_FETCH'
+    );
+
+    const seen = new Set<string>();
+    const sourceName = source.displayName || source.name || String(source.id);
+    const results = (data.fetchSourceManga?.mangas || [])
+      .filter((manga) => {
+        const key = `${source.id}:${manga.id}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .map((manga) => ({
+        id: String(manga.id),
+        sourceId: String(manga.sourceId || source.id),
+        sourceName,
+        title: manga.title || '未命名漫画',
+        cover: buildSuwayomiImageProxyUrl(manga.thumbnailUrl || ''),
+        description: manga.description,
+        author: manga.author,
+        artist: manga.artist,
+        genre: manga.genre,
+        status: normalizeMangaStatus(manga.status),
+      }));
+
+    return { source, results };
+  }
+
+  async searchManga(keyword: string, sourceId?: string, page = 1): Promise<MangaSearchResult> {
+    const sources = await this.getSearchSources(sourceId);
     const results: MangaSearchItem[] = [];
     const failedSources: MangaSearchFailure[] = [];
     const seen = new Set<string>();
@@ -383,37 +451,7 @@ export class SuwayomiClient {
     const perSourceResults = await Promise.all(
       sources.map(async (source) => {
         try {
-          const data = await this.graphqlRequest<{
-            fetchSourceManga?: {
-              mangas?: Array<{
-                id: string | number;
-                title?: string;
-                thumbnailUrl?: string;
-                sourceId?: string | number;
-                description?: string;
-                author?: string;
-                artist?: string;
-                genre?: string;
-                status?: string;
-              }>;
-            };
-          }>(
-            query,
-            {
-              input: {
-                type: 'SEARCH',
-                source: source.id,
-                query: keyword,
-                page,
-              },
-            },
-            'GET_SOURCE_MANGAS_FETCH'
-          );
-
-          return {
-            source,
-            mangas: data.fetchSourceManga?.mangas || [],
-          };
+          return await this.searchMangaSource(keyword, source, page);
         } catch (error) {
           const message = error instanceof Error ? error.message : '未知错误';
           console.warn(`[Suwayomi] manga search source failed: ${source.id} - ${message}`);
@@ -424,29 +462,18 @@ export class SuwayomiClient {
           });
           return {
             source,
-            mangas: [],
+            results: [],
           };
         }
       })
     );
 
-    for (const { source, mangas } of perSourceResults) {
-      for (const manga of mangas) {
-        const key = `${source.id}:${manga.id}`;
+    for (const { results: sourceResults } of perSourceResults) {
+      for (const manga of sourceResults) {
+        const key = `${manga.sourceId}:${manga.id}`;
         if (seen.has(key)) continue;
         seen.add(key);
-        results.push({
-          id: String(manga.id),
-          sourceId: String(manga.sourceId || source.id),
-          sourceName: source.displayName || source.name || String(source.id),
-          title: manga.title || '未命名漫画',
-          cover: buildSuwayomiImageProxyUrl(manga.thumbnailUrl || ''),
-          description: manga.description,
-          author: manga.author,
-          artist: manga.artist,
-          genre: manga.genre,
-          status: normalizeMangaStatus(manga.status),
-        });
+        results.push(manga);
       }
     }
 

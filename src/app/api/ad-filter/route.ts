@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
+
 import { getConfig } from '@/lib/config';
+
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic'; // 禁用缓存
 
 /**
  * GET /api/ad-filter
@@ -14,7 +17,9 @@ export async function GET(request: Request) {
     const config = await getConfig();
     const { searchParams } = new URL(request.url);
     const full = searchParams.get('full') === 'true';
+
     const version = config.SiteConfig?.CustomAdFilterVersion || 0;
+
     if (full) {
       // 返回完整代码和版本号
       return NextResponse.json({

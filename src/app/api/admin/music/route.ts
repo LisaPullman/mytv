@@ -5,10 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig, setCachedConfig } from '@/lib/config';
 import { db } from '@/lib/db';
-
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
-
+import { normalizeApiBaseUrl } from '@/lib/url';
 
 export const runtime = 'nodejs';
 
@@ -67,7 +64,7 @@ export async function POST(request: NextRequest) {
     // 更新缓存中的音乐配置
     adminConfig.MusicConfig = {
       Enabled,
-      BaseUrl,
+      BaseUrl: normalizeApiBaseUrl(BaseUrl),
       Token,
       ProxyEnabled: ProxyEnabled ?? true,
     };

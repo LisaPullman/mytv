@@ -3,17 +3,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthInfoFromCookie } from '@/lib/auth';
 import { BookSource, BookSourceCapabilities } from '@/lib/book.types';
 import { db } from '@/lib/db';
+import { legadoClient } from '@/lib/legado.client';
 import { opdsClient } from '@/lib/opds.client';
-
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
-
 
 export const runtime = 'nodejs';
 
 interface TestSourceInput {
   id?: string;
   name?: string;
+  type?: 'opds' | 'legado';
   url?: string;
   enabled?: boolean;
   authMode?: 'none' | 'basic' | 'header';
@@ -24,6 +22,7 @@ interface TestSourceInput {
   searchTemplate?: string;
   preferFormat?: Array<'epub' | 'pdf'>;
   language?: string;
+  legado?: BookSource['legado'];
 }
 
 async function ensureAdmin(request: NextRequest) {
@@ -43,6 +42,7 @@ async function ensureAdmin(request: NextRequest) {
 }
 
 async function detectCapabilitiesFromSource(source: BookSource): Promise<BookSourceCapabilities> {
+  if (source.type === 'legado') return legadoClient.detectCapabilitiesFromSource(source);
   try {
     const result = await opdsClient.getCatalogFromSource(source);
     return {
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const inputSources = (body?.Sources || []) as TestSourceInput[];
     if (!Array.isArray(inputSources) || inputSources.length === 0) {
-      return NextResponse.json({ success: false, message: '请至少填写一个 OPDS 书源' }, { status: 400 });
+      return NextResponse.json({ success: false, message: '请至少填写一个电子书源' }, { status: 400 });
     }
 
     const sources: BookSource[] = inputSources
@@ -82,6 +82,7 @@ export async function POST(request: NextRequest) {
       .map((item, index) => ({
         id: item.id?.trim() || `source_${index + 1}`,
         name: item.name?.trim() || `书源 ${index + 1}`,
+        type: item.type || 'opds',
         url: (item.url || '').trim(),
         enabled: item.enabled !== false,
         authMode: item.authMode || 'none',
@@ -92,6 +93,7 @@ export async function POST(request: NextRequest) {
         searchTemplate: item.searchTemplate?.trim() || '',
         preferFormat: item.preferFormat || ['epub', 'pdf'],
         language: item.language?.trim() || '',
+        legado: item.legado,
       }));
 
     if (sources.length === 0) {

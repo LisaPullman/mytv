@@ -66,23 +66,28 @@
   opacity: 1;
   transform: rotate(3deg) translate(0px, -4px);
 }
+#nprogress .spinner { display: none; }
 
 @layer utilities {
   .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
   }
-  .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+  }
 }
 
 /* ==========================================================================
    Global surfaces — modern gradient mesh + subtle film grain.
-   Replaces the original flat sky gradient with a layered "aurora" backdrop
-   so the page reads futuristic without being noisy.
+   Layered "aurora" backdrop so the page reads futuristic without noise.
    ========================================================================== */
-html, body {
+html,
+body {
   height: 100%;
   overflow-x: hidden;
+  /* 阻止 iOS Safari 拉动回弹 */
   overscroll-behavior: none;
 }
 
@@ -164,7 +169,7 @@ body::before {
     0 0 28px -8px var(--brand-glow);
 }
 
-/* Gradient overlay used by media previews */
+/* 渐变遮罩 */
 .gradient-overlay {
   background: linear-gradient(
     to bottom,
@@ -174,8 +179,8 @@ body::before {
 }
 
 /* ==========================================================================
-   Modern surface utilities — glassmorphism, neon rims, soft scrollbars,
-   conic "aurora" mesh for hero sections. Compose with Tailwind on top.
+   Modern surface utilities — glassmorphism, neon rims, conic "aurora" mesh.
+   Compose with Tailwind on top.
    ========================================================================== */
 @layer utilities {
   /* Frosted glass surface — works on both light & dark via color-mix */
@@ -294,76 +299,219 @@ body::before {
   }
 }
 
-/* ==========================================================================
-   Hide scrollbars on mobile (unchanged behaviour)
-   ========================================================================== */
+/* 隐藏移动端（<768px）垂直滚动条 */
 @media (max-width: 767px) {
-  html, body {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+  html,
+  body {
+    -ms-overflow-style: none; /* IE & Edge */
+    scrollbar-width: none; /* Firefox */
   }
+
   html::-webkit-scrollbar,
-  body::-webkit-scrollbar { display: none; }
+  body::-webkit-scrollbar {
+    display: none; /* Chrome Safari */
+  }
 }
 
-/* ==========================================================================
-   View Transitions API — theme switch animation
-   ========================================================================== */
+/* View Transitions API 动画 */
 @keyframes slide-from-top {
-  from { clip-path: polygon(0 0, 100% 0, 100% 0, 0 0); }
-  to   { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+  from {
+    clip-path: polygon(0 0, 100% 0, 100% 0, 0 0);
+  }
+  to {
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+  }
 }
+
 @keyframes slide-from-bottom {
-  from { clip-path: polygon(0 100%, 100% 100%, 100% 100%, 0 100%); }
-  to   { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+  from {
+    clip-path: polygon(0 100%, 100% 100%, 100% 100%, 0 100%);
+  }
+  to {
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+  }
 }
+
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation-duration: 0.6s;
+  animation-duration: 0.8s;
   animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   animation-fill-mode: both;
 }
-::view-transition-old(root) { animation: none; }
-html.dark::view-transition-new(root)        { animation-name: slide-from-top; }
-html:not(.dark)::view-transition-new(root)  { animation-name: slide-from-bottom; }
 
-/* Player fills */
+/*
+  切换时，旧的视图不应该有动画，它应该在下面，等待被新的视图覆盖。
+  这可以防止在动画完成前，页面底部提前变色。
+*/
+::view-transition-old(root) {
+  animation: none;
+}
+
+/* 从浅色到深色：新内容（深色）从顶部滑入 */
+html.dark::view-transition-new(root) {
+  animation-name: slide-from-top;
+}
+
+/* 从深色到浅色：新内容（浅色）从底部滑入 */
+html:not(.dark)::view-transition-new(root) {
+  animation-name: slide-from-bottom;
+}
+
+/* 强制播放器内部的 video 元素高度为 100%，并保持内容完整显示 */
 div[data-media-provider] video {
   height: 100%;
   object-fit: contain;
 }
+
 .art-poster {
-  background-size: contain !important;
-  background-position: center center !important;
-  background-repeat: no-repeat !important;
-  background-color: #000 !important;
+  background-size: contain !important; /* 使图片完整展示 */
+  background-position: center center !important; /* 居中显示 */
+  background-repeat: no-repeat !important; /* 防止重复 */
+  background-color: #000 !important; /* 其余区域填充为黑色 */
 }
+
+/* 隐藏移动端竖屏时的 pip 按钮 */
 @media (max-width: 768px) {
-  .art-control-pip,
-  .art-control-fullscreenWeb,
-  .art-control-volume { display: none !important; }
+  .art-control-pip {
+    display: none !important;
+  }
+
+  .art-control-fullscreenWeb {
+    display: none !important;
+  }
+
+  .art-control-volume {
+    display: none !important;
+  }
 }
 
-/* Legacy ripple/badge animations — kept for components that reference them */
+/* 水波纹缩放动画 - 第一层 (快速扩散) */
 @keyframes ping-scale {
-  0%   { transform: scale(1);   opacity: 0.6; }
-  75%, 100% { transform: scale(2); opacity: 0; }
-}
-@keyframes pulse-scale {
-  0%, 100% { transform: scale(1);    opacity: 0.4; }
-  50%      { transform: scale(1.15); opacity: 0.2; }
-}
-@keyframes badge-scale {
-  0%, 100% { transform: scale(1); }
-  50%      { transform: scale(1.08); }
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
 }
 
-/* Reduced motion — respect the OS preference */
+/* 水波纹缩放动画 - 第二层 (慢速脉冲) */
+@keyframes pulse-scale {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.2;
+  }
+}
+
+/* 主体徽章缩放动画 */
+@keyframes badge-scale {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes reader-book-flip {
+  0%, 100% {
+    transform: perspective(120px) rotateY(0deg) translateY(0);
+  }
+  30% {
+    transform: perspective(120px) rotateY(-24deg) translateY(-2px);
+  }
+  60% {
+    transform: perspective(120px) rotateY(24deg) translateY(0);
+  }
+}
+
+.reader-book-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0284c7;
+  animation: reader-book-flip 1.5s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.dark .reader-book-loader {
+  color: #38bdf8;
+}
+
+/* TV 端遥控器焦点：深色选中 + 放大，而不是细边框 */
+.tv-focusable {
+  position: relative;
+  scroll-margin-top: 150px;
+  scroll-margin-bottom: 96px;
+  scroll-margin-left: 48px;
+  scroll-margin-right: 48px;
+  transform-origin: center;
+  scale: 1;
+  transition:
+    scale 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease,
+    opacity 180ms ease;
+}
+
+.tv-focusable:focus,
+.tv-focusable:focus-visible,
+.tv-focused {
+  outline: none !important;
+  scale: 1.055;
+  background-color: rgba(15, 23, 42, 0.96) !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 18px 44px rgba(0, 0, 0, 0.68),
+    0 0 26px rgba(225, 29, 72, 0.38) !important;
+  z-index: 30;
+}
+
+/* 白底卡片（如二维码）聚焦时保持浅色，避免扫码区域被深色焦点样式盖住 */
+.tv-focusable.tv-focusable-light:focus,
+.tv-focusable.tv-focusable-light:focus-visible,
+.tv-focusable.tv-focusable-light.tv-focused {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+.tv-focusable:focus::after,
+.tv-focusable:focus-visible::after,
+.tv-focused::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255,255,255,0.22), rgba(225,29,72,0.28));
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.tv-focusable:active {
+  scale: 1.03;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  .tv-focusable,
+  .tv-focusable:focus,
+  .tv-focusable:focus-visible,
+  .tv-focused {
+    transition: none;
   }
 }
