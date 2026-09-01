@@ -72,7 +72,7 @@ function HomeClient() {
   const [showAIChat, setShowAIChat] = useState(false);
   const [aiEnabled, setAiEnabled] = useState(false);
   const [aiDefaultMessageNoVideo, setAiDefaultMessageNoVideo] = useState(
-    '你好！我是 f.foxai 的 AI 影视助手。想看什么电影或剧集？需要推荐吗？'
+    '你好！我是 foxai 的 AI 影视助手。想看什么电影或剧集？需要推荐吗？'
   );
   const [sourceSearchEnabled, setSourceSearchEnabled] = useState(true);
   const [musicEnabled, setMusicEnabled] = useState(false);

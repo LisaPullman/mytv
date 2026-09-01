@@ -65,7 +65,7 @@ const MobileHeader = ({ showBackButton = false }: MobileHeaderProps) => {
               height='18'
               viewBox='0 0 64 64'
               aria-hidden='true'
-              className='transition-transform duration-300 group-hover:scale-105'
+              className='text-[color:var(--brand)] transition-transform duration-300 group-hover:scale-105'
             >
               <g
                 fill='none'

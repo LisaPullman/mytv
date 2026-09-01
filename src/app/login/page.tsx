@@ -358,7 +358,11 @@ function LoginPageClient() {
             className='flex items-center gap-2'
             style={{ color: 'var(--ink)' }}
           >
-            <FoxMark size={30} title={siteName || 'foxai'} />
+            <FoxMark
+              size={30}
+              title={siteName || 'foxai'}
+              className='text-[color:var(--brand)]'
+            />
             <span
               style={{
                 fontWeight: 600,

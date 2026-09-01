@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
 
       try {
         const adminConfig = await getConfig();
-        const siteName = adminConfig?.SiteConfig?.SiteName || 'MoonTVPlus';
+        const siteName = adminConfig?.SiteConfig?.SiteName || 'foxai';
         await EmailService.sendTestEmail(emailConfig, testEmail, siteName);
         return NextResponse.json({ success: true, message: '测试邮件发送成功' });
       } catch (error) {

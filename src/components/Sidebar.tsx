@@ -27,9 +27,8 @@ const SidebarContext = createContext<SidebarContextType>({
 
 export const useSidebar = () => useContext(SidebarContext);
 
-// foxai lockup — "Trace" mark (currentColor) + "foxai" wordmark where the
-// "ai" suffix picks up the brand accent. Per LOGO.html §2.3: no chip, no
-// outline, mark inherits the wordmark ink so it sits calmly beside text.
+// foxai lockup — "Trace" mark + "foxai" wordmark: the mark and the "ai"
+// suffix share the brand accent, "fox" stays in ink.
 const Logo = () => {
   const { siteName } = useSite();
   return (
@@ -44,7 +43,7 @@ const Logo = () => {
         height='26'
         viewBox='0 0 64 64'
         aria-hidden='true'
-        className='transition-transform duration-300 group-hover:scale-105'
+        className='text-[color:var(--brand)] transition-transform duration-300 group-hover:scale-105'
       >
         <g
           fill='none'

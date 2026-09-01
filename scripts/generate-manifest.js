@@ -11,12 +11,12 @@ const publicDir = path.join(projectRoot, 'public');
 const manifestPath = path.join(publicDir, 'manifest.json');
 
 // 从环境变量获取站点名称
-const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'f.foxai';
+const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'foxai';
 
 // manifest.json 模板
 // Apple 状态栏等配置应写在 HTML meta（layout appleWebApp），非标准 manifest 字段浏览器会忽略
 const manifestTemplate = {
-  name: siteName === 'f.foxai' ? 'f.foxai 影视' : siteName,
+  name: siteName === 'foxai' ? 'foxai 影视' : siteName,
   short_name: siteName,
   description: '影视聚合',
   start_url: '/',

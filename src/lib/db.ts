@@ -1117,21 +1117,23 @@ export class DbManager {
   }
 
   // ---------- 通用键值存储 ----------
+  // localstorage 模式下 storage 为 null（前端自存），这里必须做空值守卫，
+  // 否则 typeof null.xxx 会抛 TypeError（上游在 localstorage 搜索路径上踩中）。
   async getGlobalValue(key: string): Promise<string | null> {
-    if (typeof (this.storage as any).getGlobalValue === 'function') {
+    if (this.storage && typeof (this.storage as any).getGlobalValue === 'function') {
       return (this.storage as any).getGlobalValue(key);
     }
     return null;
   }
 
   async setGlobalValue(key: string, value: string): Promise<void> {
-    if (typeof (this.storage as any).setGlobalValue === 'function') {
+    if (this.storage && typeof (this.storage as any).setGlobalValue === 'function') {
       await (this.storage as any).setGlobalValue(key, value);
     }
   }
 
   async deleteGlobalValue(key: string): Promise<void> {
-    if (typeof (this.storage as any).deleteGlobalValue === 'function') {
+    if (this.storage && typeof (this.storage as any).deleteGlobalValue === 'function') {
       await (this.storage as any).deleteGlobalValue(key);
     }
   }

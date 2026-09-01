@@ -94,11 +94,10 @@ export function FoxTile({ size = 24, title, className, ...rest }: LogoProps) {
 }
 
 /**
- * foxai lockup — "Trace" mark (currentColor) + "foxai" wordmark where the
- * "ai" suffix picks up the brand accent. Per LOGO.html §2.3: no chip, no
- * outline, the mark inherits the surrounding ink so it sits calmly beside
- * the wordmark. Site name may stay "f.foxai" — the lockup itself is Mark +
- * "foxai", never "f.foxai".
+ * foxai lockup — "Trace" mark + "foxai" wordmark. The mark and the "ai"
+ * suffix share the brand accent; "fox" stays in ink. No chip, no outline,
+ * no middle dot. Site name may stay "f.foxai" — the lockup itself is Mark +
+ * "foxai".
  */
 export function FoxLockup({
   size = 24,
@@ -116,7 +115,11 @@ export function FoxLockup({
       style={{ gap, color: 'var(--ink)' }}
       {...(rest as any)}
     >
-      <FoxMark size={size} title={title} />
+      <FoxMark
+        size={size}
+        title={title}
+        className='text-[color:var(--brand)]'
+      />
       <span
         style={{
           fontWeight: 600,

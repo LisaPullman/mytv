@@ -42,7 +42,7 @@ function getDeviceInfo(userAgent: string): string {
 
   // 检查是否为 MoonTVPlus APP
   if (ua.includes('moontvplus')) {
-    return 'MoonTVPlus APP';
+    return 'foxai APP';
   }
 
   // 检查是否为 OrionTV

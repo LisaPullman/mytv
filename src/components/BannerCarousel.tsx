@@ -486,7 +486,7 @@ export default function BannerCarousel({
       >
         <Image
           src='/logo.png'
-          alt='f.foxai'
+          alt='foxai'
           width={120}
           height={120}
           className='opacity-50'

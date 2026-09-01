@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { normalizeApiBaseUrl } from '@/lib/url';
 
 import { AdminConfig } from './admin.types';
+import { DEFAULT_API_SITES, DEFAULT_LIVE_SOURCES } from './default-sources';
 import { setServerTmdbImageBaseUrl } from './tmdb-image-base';
 
 const BUILTIN_DANMAKU_API_BASE = 'https://mtvpls-danmu.netlify.app/87654321';
@@ -257,6 +258,35 @@ async function getInitConfig(
   } catch (e) {
     cfgFile = {} as ConfigFileStruct;
   }
+
+  // If the operator hasn't supplied any api_site / lives, fall back to the
+  // foxai built-in defaults so a fresh deploy isn't an empty shell.
+  const hasFileApiSites =
+    cfgFile.api_site && Object.keys(cfgFile.api_site).length > 0;
+  const hasFileLives =
+    cfgFile.lives && Object.keys(cfgFile.lives).length > 0;
+  if (!hasFileApiSites) {
+    cfgFile.api_site = {};
+    for (const s of DEFAULT_API_SITES) {
+      cfgFile.api_site[s.key] = {
+        key: s.key,
+        api: s.api,
+        name: s.name,
+        detail: s.detail,
+      };
+    }
+  }
+  if (!hasFileLives) {
+    cfgFile.lives = {};
+    for (const l of DEFAULT_LIVE_SOURCES) {
+      cfgFile.lives[l.key] = {
+        name: l.name,
+        url: l.url,
+        epg: l.epg,
+      };
+    }
+  }
+
   const hasCustomDanmakuEnv = Boolean(
     process.env.DANMAKU_API_BASE || process.env.DANMAKU_API_TOKEN
   );
@@ -264,7 +294,7 @@ async function getInitConfig(
     ConfigFile: configSource,
     ConfigSubscribtion: subConfig,
     SiteConfig: {
-      SiteName: process.env.NEXT_PUBLIC_SITE_NAME || 'f.foxai',
+      SiteName: process.env.NEXT_PUBLIC_SITE_NAME || 'foxai',
       Announcement:
         process.env.ANNOUNCEMENT ||
         '本网站仅提供影视信息搜索服务，所有内容均来自第三方网站。本站不存储任何视频资源，不对任何内容的准确性、合法性、完整性负责。',
@@ -519,7 +549,7 @@ export function configSelfCheck(adminConfig: AdminConfig): AdminConfig {
   // 确保必要的属性存在和初始化
   if (!adminConfig.SiteConfig) {
     adminConfig.SiteConfig = {
-      SiteName: 'f.foxai',
+      SiteName: 'foxai',
       Announcement: '',
       SearchDownstreamMaxPage: 5,
       SiteInterfaceCacheTime: 7200,
@@ -553,6 +583,23 @@ export function configSelfCheck(adminConfig: AdminConfig): AdminConfig {
       TurnstileSecretKey: '',
       DefaultUserTags: [],
     };
+  }
+
+  // 旧版站名归一化：数据库/环境里遗留的上游名称统一改写为 foxai，
+  // 避免已部署实例的浏览器标题仍显示 MoonTVPlus。
+  const legacySiteNames = new Set([
+    'MoonTVPlus',
+    'MoonTV',
+    'moontv',
+    'MoonTV Plus',
+    'Moon TV',
+  ]);
+  if (
+    !adminConfig.SiteConfig.SiteName ||
+    legacySiteNames.has(adminConfig.SiteConfig.SiteName.trim())
+  ) {
+    adminConfig.SiteConfig.SiteName =
+      process.env.NEXT_PUBLIC_SITE_NAME || 'foxai';
   }
   // 确保弹幕配置存在
   if (adminConfig.SiteConfig.DanmakuSourceType === undefined) {
