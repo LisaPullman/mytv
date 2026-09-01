@@ -67,7 +67,11 @@ export async function getCachedLiveChannels(
       return null;
     }
     liveInfo.channelNumber = channelNum;
-    await db.saveAdminConfig(config);
+    try {
+      await db.saveAdminConfig(config);
+    } catch {
+      // localstorage 模式无服务端配置存储，频道数只在内存缓存中维护即可
+    }
   }
   return cachedLiveChannels[key] || null;
 }
@@ -91,10 +95,18 @@ export async function refreshLiveChannels(liveInfo: {
       'User-Agent': ua,
     },
   });
+  if (!response.ok) {
+    throw new Error(
+      `直播源地址不可用（HTTP ${response.status}），请检查或更换源地址`
+    );
+  }
   const data = await response.text();
   const result = isM3UContent(data)
     ? parseM3U(liveInfo.key, data)
     : parseTxtLive(liveInfo.key, data);
+  if (result.channels.length === 0) {
+    throw new Error('直播源内容无法解析出任何频道，请检查源格式');
+  }
   const epgUrl = liveInfo.epg || result.tvgUrl;
   const tvgIds = result.channels
     .map((channel) => channel.tvgId)

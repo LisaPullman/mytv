@@ -95,41 +95,65 @@ export const DEFAULT_API_SITES: DefaultApiSite[] = [
   { key: 'avxiangnai', name: '18+ 香奶儿资源',  api: 'https://www.gdlsp.com/api/json.php',              detail: 'https://www.gdlsp.com' },
 ];
 
+// 直播源均经实测（HTTP 200 且能解析出频道/节目单）后收录，失效源定期清理。
+// 2026-09 复测：yuanzl77 / hacks.tools / jia070310 4K / dongyubin 四源已 404，
+// 替换为下列存活源。EPG 用 51zmt（数字 id 经 display-name 映射为 "CCTV1"
+// 形式，与 TXT 源频道名及 tvg-name 匹配；jiandantv 自带 e.xml.gz 缺 CCTV1）。
 export const DEFAULT_LIVE_SOURCES: DefaultLiveSource[] = [
   {
     key: 'iptv_vbskycn',
-    name: 'VBSkyCN IPTV (自动更新)',
+    name: 'VBSkyCN IPTV (6小时更新)',
     url: 'https://raw.githubusercontent.com/vbskycn/iptv/master/tv/iptv4.txt',
-    epg: 'https://raw.githubusercontent.com/vbskycn/iptv/master/epg/epg.xml.gz',
+    epg: 'http://epg.51zmt.top:8000/e.xml',
   },
   {
-    key: 'iptv_yuanzl77',
-    name: 'Yuanzl77 IPTV (每日更新)',
-    url: 'https://raw.githubusercontent.com/yuanzl77/IPTV/main/latest.m3u',
-    epg: 'https://raw.githubusercontent.com/yuanzl77/IPTV/main/epg.gz',
+    key: 'iptv_zilong',
+    name: 'Collect-IPTV 测速优选 (4小时更新)',
+    url: 'https://raw.githubusercontent.com/zilong7728/Collect-IPTV/main/best_sorted.m3u',
+    epg: 'http://epg.51zmt.top:8000/e.xml',
   },
   {
-    key: 'iptv_hacks',
-    name: 'Hacks IPTV (4小时更新)',
-    url: 'https://iptv.hacks.tools/live.m3u',
-    epg: 'https://iptv.hacks.tools/epg.xml.gz',
+    key: 'iptv_guovin',
+    name: 'Guovin IPTV 测速优选 (1600+频道)',
+    url: 'https://raw.githubusercontent.com/Guovin/iptv-api/gd/output/result.m3u',
+  },
+  {
+    key: 'iptv_jiandantv',
+    name: 'IPTV2026 聚合 (2400+频道)',
+    url: 'https://raw.githubusercontent.com/jiandantv/IPTV2026/main/live.m3u',
+    epg: 'http://epg.51zmt.top:8000/e.xml',
+  },
+  {
+    key: 'iptv_suxuang',
+    name: 'myIPTV 高清4K (1200+频道)',
+    url: 'https://raw.githubusercontent.com/suxuang/myIPTV/main/ipv4.m3u',
+    epg: 'http://epg.51zmt.top:8000/e.xml',
+  },
+  {
+    key: 'iptv_yang1989',
+    name: 'YanG-1989 聚合直播 (600+频道)',
+    url: 'https://raw.githubusercontent.com/YanG-1989/m3u/main/Gather.m3u',
+  },
+  {
+    key: 'iptv_epgpw',
+    name: 'EPG.pw 国际频道 (测试源)',
+    url: 'https://epg.pw/test_channels.m3u',
   },
   {
     key: 'iptv_awesome',
     name: 'Tvlist-awesome-m3u-m3u8 国内',
     url: 'https://raw.githubusercontent.com/imDazui/Tvlist-awesome-m3u-m3u8/master/m3u/%E5%9B%BD%E5%86%85%E7%94%B5%E8%A7%86%E5%8F%B02023.m3u8',
   },
-  {
-    key: 'iptv_4k',
-    name: '4K-IPTV-M3U (按省份)',
-    url: 'https://raw.githubusercontent.com/jia070310/4K-IPTV-M3U/main/output/playlist.m3u',
-  },
-  {
-    key: 'iptv_dongyubin',
-    name: 'Dongyubin IPTV (体育/卫视)',
-    url: 'https://raw.githubusercontent.com/dongyubin/IPTV/main/iptv.m3u8',
-  },
 ];
+
+// 2026-09 已确认失效的内置直播源（key → 死链 URL）。用于一次性迁移：
+// 已部署实例的配置库中若仍挂着这些条目，则从 LiveConfig 移除。
+export const DEAD_LIVE_SOURCES: Record<string, string> = {
+  iptv_yuanzl77: 'https://raw.githubusercontent.com/yuanzl77/IPTV/main/latest.m3u',
+  iptv_hacks: 'https://iptv.hacks.tools/live.m3u',
+  iptv_4k: 'https://raw.githubusercontent.com/jia070310/4K-IPTV-M3U/main/output/playlist.m3u',
+  iptv_dongyubin: 'https://raw.githubusercontent.com/dongyubin/IPTV/main/iptv.m3u8',
+};
 
 /**
  * Build a JSON string suitable for INIT_CONFIG that contains every default

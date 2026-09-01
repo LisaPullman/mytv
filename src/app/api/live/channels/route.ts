@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: '获取频道信息失败' },
+      { error: error instanceof Error ? error.message : '获取频道信息失败' },
       { status: 500 }
     );
   }

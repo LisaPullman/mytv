@@ -4,7 +4,11 @@ import { db } from '@/lib/db';
 import { normalizeApiBaseUrl } from '@/lib/url';
 
 import { AdminConfig } from './admin.types';
-import { DEFAULT_API_SITES, DEFAULT_LIVE_SOURCES } from './default-sources';
+import {
+  DEAD_LIVE_SOURCES,
+  DEFAULT_API_SITES,
+  DEFAULT_LIVE_SOURCES,
+} from './default-sources';
 import { setServerTmdbImageBaseUrl } from './tmdb-image-base';
 
 const BUILTIN_DANMAKU_API_BASE = 'https://mtvpls-danmu.netlify.app/87654321';
@@ -502,12 +506,18 @@ export async function getConfig(): Promise<AdminConfig> {
     // foxai 默认值迁移（补齐 18+ 片源并默认放行限制级），见 configSelfCheck
     const needsFoxaiDefaultsMigration =
       adminConfig.SiteConfig?.AdultDefaultApplied !== true;
+    // 2026-09 直播源修复迁移（清理死链、补齐新源），见 configSelfCheck
+    const needsLiveSourcesMigration =
+      adminConfig.SiteConfig?.LiveSourcesUpgraded202609 !== true;
 
     adminConfig = configSelfCheck(adminConfig);
     cachedConfig = adminConfig;
 
     // 如果进行了Emby配置迁移，保存到数据库
-    if (!dbReadFailed && (needsEmbyMigration || needsFoxaiDefaultsMigration)) {
+    if (
+      !dbReadFailed &&
+      (needsEmbyMigration || needsFoxaiDefaultsMigration || needsLiveSourcesMigration)
+    ) {
       try {
         await db.saveAdminConfig(adminConfig);
         console.log('[Config] Emby配置迁移已保存到数据库');
@@ -757,6 +767,51 @@ export function configSelfCheck(adminConfig: AdminConfig): AdminConfig {
         });
       }
     }
+    const seenLiveKeys = new Set(adminConfig.LiveConfig.map((l) => l.key));
+    for (const l of DEFAULT_LIVE_SOURCES) {
+      if (!seenLiveKeys.has(l.key)) {
+        adminConfig.LiveConfig.push({
+          key: l.key,
+          name: l.name,
+          url: l.url,
+          ua: undefined,
+          epg: l.epg,
+          channelNumber: 0,
+          from: 'config',
+          disabled: false,
+        });
+      }
+    }
+  }
+
+  // 2026-09 直播源修复迁移：内置直播源中 4 个上游仓库已 404（见
+  // DEAD_LIVE_SOURCES），已部署实例表现为"切到这些源后获取频道失败"。
+  // 这里移除仍指向死链的条目、把 vbskycn 的失效 EPG 换为可用地址，并补齐
+  // 新增的内置直播源；标记 LiveSourcesUpgraded202609 后不再重复执行，
+  // 管理员后续自行添加/禁用的直播源不受影响。
+  if (adminConfig.SiteConfig.LiveSourcesUpgraded202609 !== true) {
+    adminConfig.SiteConfig.LiveSourcesUpgraded202609 = true;
+
+    // 1) 移除指向死链的内置源（key + URL 双匹配，避免误删自定义同名源）
+    adminConfig.LiveConfig = adminConfig.LiveConfig.filter((live) => {
+      const deadUrl = DEAD_LIVE_SOURCES[live.key];
+      return !(deadUrl && live.url === deadUrl);
+    });
+
+    // 2) 同步内置源的名称/URL/EPG（仅当 URL 仍是旧默认值时更新，
+    //    管理员若换成自己的地址则不动；disabled 状态保持不变）
+    const defaultsByKey = new Map(
+      DEFAULT_LIVE_SOURCES.map((l) => [l.key, l])
+    );
+    for (const live of adminConfig.LiveConfig) {
+      const def = defaultsByKey.get(live.key);
+      if (def && live.url === def.url) {
+        live.name = def.name;
+        live.epg = def.epg;
+      }
+    }
+
+    // 3) 补齐新增的内置直播源
     const seenLiveKeys = new Set(adminConfig.LiveConfig.map((l) => l.key));
     for (const l of DEFAULT_LIVE_SOURCES) {
       if (!seenLiveKeys.has(l.key)) {

@@ -1028,14 +1028,20 @@ export class DbManager {
 
   // ---------- 管理员配置 ----------
   async getAdminConfig(): Promise<AdminConfig | null> {
-    if (typeof (this.storage as any).getAdminConfig === 'function') {
+    if (
+      this.storage &&
+      typeof (this.storage as any).getAdminConfig === 'function'
+    ) {
       return (this.storage as any).getAdminConfig();
     }
     return null;
   }
 
   async saveAdminConfig(config: AdminConfig): Promise<void> {
-    if (typeof (this.storage as any).setAdminConfig === 'function') {
+    if (
+      this.storage &&
+      typeof (this.storage as any).setAdminConfig === 'function'
+    ) {
       await (this.storage as any).setAdminConfig(config);
     }
   }
