@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getAuthInfoFromCookie } from '@/lib/auth';
+import { getAdultLevel, isAdultSource } from '@/lib/adult-access';
 import { getAvailableApiSites, getCacheTime, getConfig } from '@/lib/config';
 import { searchFromApi } from '@/lib/downstream';
 import {
@@ -40,7 +41,11 @@ export async function GET(request: NextRequest) {
   }
 
   const config = await getConfig();
-  const apiSites = await getAvailableApiSites(authInfo.username);
+  // foxai 分级访问：非 adult 级别时 18+ 片源不可检索
+  const adultLevel = await getAdultLevel(request);
+  const apiSites = (await getAvailableApiSites(authInfo.username)).filter(
+    (site) => adultLevel === 'adult' || !isAdultSource(site.key, site.name)
+  );
 
   try {
     const enabledScripts = await listEnabledSourceScripts();
@@ -75,7 +80,7 @@ export async function GET(request: NextRequest) {
       );
 
       let result = scriptResults.flat().filter((r) => r.title === query);
-      if (!config.SiteConfig.DisableYellowFilter) {
+      if (adultLevel !== 'adult' || !config.SiteConfig.DisableYellowFilter) {
         result = result.filter((item) => {
           const typeName = item.type_name || '';
           return !yellowWords.some((word: string) => typeName.includes(word));
@@ -120,7 +125,7 @@ export async function GET(request: NextRequest) {
 
     const results = await searchFromApi(targetSite, query);
     let result = results.filter((r) => r.title === query);
-    if (!config.SiteConfig.DisableYellowFilter) {
+    if (adultLevel !== 'adult' || !config.SiteConfig.DisableYellowFilter) {
       result = result.filter((result) => {
         const typeName = result.type_name || '';
         return !yellowWords.some((word: string) => typeName.includes(word));

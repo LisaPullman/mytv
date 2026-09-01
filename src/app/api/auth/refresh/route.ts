@@ -39,7 +39,12 @@ export async function POST(request: NextRequest) {
   }
 
   if (STORAGE_TYPE === 'localstorage') {
-    if (!authInfo.password || authInfo.password !== process.env.PASSWORD) {
+    // foxai 分级登录：普通密码与限制级密钥均有效
+    const adultKey = process.env.ADULT_KEY || '19821021';
+    const passwordOk =
+      authInfo.password === process.env.PASSWORD ||
+      authInfo.password === adultKey;
+    if (!authInfo.password || !passwordOk) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

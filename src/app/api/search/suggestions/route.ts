@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { AdminConfig } from '@/lib/admin.types';
 import { getAuthInfoFromCookie } from '@/lib/auth';
+import { getAdultLevel, isAdultSource } from '@/lib/adult-access';
 import { getAvailableApiSites, getConfig } from '@/lib/config';
 import { searchFromApi } from '@/lib/downstream';
 import { yellowWords } from '@/lib/yellow';
@@ -27,7 +28,9 @@ export async function GET(request: NextRequest) {
     }
 
     // 生成建议
-    const suggestions = await generateSuggestions(config, query, authInfo.username);
+    // foxai 分级访问：非 adult 级别时 18+ 片源不参与联想
+    const adultLevel = await getAdultLevel(request);
+    const suggestions = await generateSuggestions(config, query, authInfo.username, adultLevel);
 
     // 从配置中获取缓存时间，如果没有配置则使用默认值300秒（5分钟）
     const cacheTime = config.SiteConfig.SiteInterfaceCacheTime || 300;
@@ -49,7 +52,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-async function generateSuggestions(config: AdminConfig, query: string, username: string): Promise<
+async function generateSuggestions(config: AdminConfig, query: string, username: string, adultLevel: 'standard' | 'adult'): Promise<
   Array<{
     text: string;
     type: 'exact' | 'related' | 'suggestion';
@@ -58,7 +61,9 @@ async function generateSuggestions(config: AdminConfig, query: string, username:
 > {
   const queryLower = query.toLowerCase();
 
-  const apiSites = await getAvailableApiSites(username);
+  const apiSites = (await getAvailableApiSites(username)).filter(
+    (site) => adultLevel === 'adult' || !isAdultSource(site.key, site.name)
+  );
   let realKeywords: string[] = [];
 
   if (apiSites.length > 0) {
@@ -69,7 +74,7 @@ async function generateSuggestions(config: AdminConfig, query: string, username:
     realKeywords = Array.from(
       new Set(
         results
-          .filter((r: any) => config.SiteConfig.DisableYellowFilter || !yellowWords.some((word: string) => (r.type_name || '').includes(word)))
+          .filter((r: any) => (adultLevel === 'adult' && config.SiteConfig.DisableYellowFilter) || !yellowWords.some((word: string) => (r.type_name || '').includes(word)))
           .map((r: any) => r.title)
           .filter(Boolean)
           .flatMap((title: string) => title.split(/[ -:：·、-]/))

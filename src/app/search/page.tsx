@@ -7,6 +7,8 @@ import {
   Grid2x2,
   HardDrive,
   List,
+  Lock,
+  LockOpen,
   Magnet,
   RefreshCw,
   Search,
@@ -126,6 +128,14 @@ function SearchPageClient() {
   >(new Map());
   // 强制刷新状态
   const [forceRefresh, setForceRefresh] = useState(false);
+  // foxai 分级访问：18+ 片源解锁状态与弹窗
+  const [adultLevel, setAdultLevel] = useState<'standard' | 'adult'>(
+    'standard'
+  );
+  const [showAdultDialog, setShowAdultDialog] = useState(false);
+  const [adultKeyInput, setAdultKeyInput] = useState('');
+  const [adultKeyError, setAdultKeyError] = useState('');
+  const [adultKeySubmitting, setAdultKeySubmitting] = useState(false);
   // 是否使用了缓存结果
   const [isFromCache, setIsFromCache] = useState(false);
   // 精确搜索开关
@@ -1537,6 +1547,56 @@ function SearchPageClient() {
     };
   }, []);
 
+  // foxai 分级访问：拉取当前限制级别（分级登录或本设备解锁）
+  useEffect(() => {
+    fetch('/api/adult-unlock')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.level === 'adult') setAdultLevel('adult');
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleAdultUnlock = async () => {
+    if (!adultKeyInput.trim() || adultKeySubmitting) return;
+    setAdultKeySubmitting(true);
+    setAdultKeyError('');
+    try {
+      const res = await fetch('/api/adult-unlock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: adultKeyInput.trim() }),
+      });
+      if (res.ok) {
+        setAdultLevel('adult');
+        setShowAdultDialog(false);
+        setAdultKeyInput('');
+        setForceRefresh(true); // 重搜当前关键词（跳过缓存）
+      } else {
+        setAdultKeyError('密钥错误');
+      }
+    } catch {
+      setAdultKeyError('网络错误，请重试');
+    } finally {
+      setAdultKeySubmitting(false);
+    }
+  };
+
+  const handleAdultLock = async () => {
+    try {
+      await fetch('/api/adult-unlock', { method: 'DELETE' });
+    } catch {}
+    let level: string = 'standard';
+    try {
+      const d = await fetch('/api/adult-unlock')
+        .then((r) => (r.ok ? r.json() : null));
+      if (d?.level) level = d.level;
+    } catch {}
+    setAdultLevel(level === 'adult' ? 'adult' : 'standard');
+    setShowAdultDialog(false);
+    setForceRefresh(true);
+  };
+
   // 输入框内容变化时触发，显示搜索建议
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -1845,8 +1905,8 @@ function SearchPageClient() {
             </div>
           </form>
 
-          {/* 选项卡 */}
-          <div className='flex justify-center mt-6'>
+          {/* 选项卡 + foxai 限制级解锁入口 */}
+          <div className='flex items-center justify-center gap-3 mt-6'>
             <CapsuleSwitch
               options={[
                 {
@@ -1878,7 +1938,125 @@ function SearchPageClient() {
                 handleTabChange(value as 'video' | 'pansou' | 'acg')
               }
             />
+            <button
+              type='button'
+              onClick={() => {
+                setAdultKeyError('');
+                setShowAdultDialog(true);
+              }}
+              title={
+                adultLevel === 'adult'
+                  ? '限制级已解锁，点击管理'
+                  : '输入限制级密钥解锁 18+ 片源'
+              }
+              className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                adultLevel === 'adult'
+                  ? 'text-[color:var(--brand)] bg-[color:var(--brand-muted)]'
+                  : 'text-[color:var(--ink-soft)] hover:text-[color:var(--brand)] hover:bg-[color:var(--brand-muted)]'
+              }`}
+            >
+              {adultLevel === 'adult' ? (
+                <LockOpen size={13} />
+              ) : (
+                <Lock size={13} />
+              )}
+              {adultLevel === 'adult' ? '限制级' : '限制级锁定'}
+            </button>
           </div>
+
+          {/* foxai 限制级解锁/上锁弹窗 */}
+          {showAdultDialog && (
+            <div
+              className='fixed inset-0 z-[1200] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4'
+              onClick={() => setShowAdultDialog(false)}
+            >
+              <div
+                className='glass w-full max-w-sm rounded-2xl p-6 edge-highlight'
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div
+                  className='flex items-center gap-2 mb-3'
+                  style={{ color: 'var(--ink)' }}
+                >
+                  {adultLevel === 'adult' ? (
+                    <LockOpen size={18} />
+                  ) : (
+                    <Lock size={18} />
+                  )}
+                  <h3 className='text-base font-semibold'>限制级内容（18+）</h3>
+                </div>
+                {adultLevel === 'adult' ? (
+                  <>
+                    <p className='text-sm mb-4 text-[color:var(--ink-soft)]'>
+                      18+ 片源正在参与搜索。重新上锁后，普通搜索将不再包含限制级内容。
+                    </p>
+                    <div className='flex justify-end gap-2'>
+                      <button
+                        type='button'
+                        onClick={() => setShowAdultDialog(false)}
+                        className='rounded-lg px-4 py-2 text-sm text-[color:var(--ink-soft)] hover:bg-black/5 dark:hover:bg-white/10 transition-colors'
+                      >
+                        关闭
+                      </button>
+                      <button
+                        type='button'
+                        onClick={handleAdultLock}
+                        className='rounded-lg px-4 py-2 text-sm font-medium bg-[color:var(--brand)] text-white hover:brightness-110 transition-all'
+                      >
+                        重新上锁
+                      </button>
+                    </div>
+                    <p className='mt-3 text-xs text-[color:var(--ink-soft)]'>
+                      提示：若你是用限制级密钥登录的，上锁需退出后改用普通密码重新登录。
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className='text-sm mb-3 text-[color:var(--ink-soft)]'>
+                      输入限制级密钥，解锁 18+ 片源（仅对本设备生效，30
+                      天内免重复输入）。
+                    </p>
+                    <input
+                      type='password'
+                      value={adultKeyInput}
+                      onChange={(e) => {
+                        setAdultKeyInput(e.target.value);
+                        setAdultKeyError('');
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleAdultUnlock();
+                      }}
+                      placeholder='限制级密钥'
+                      autoFocus
+                      className='block w-full rounded-lg border-0 py-2.5 px-3 text-sm shadow-sm ring-1 ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-[color:var(--brand)] focus:outline-none bg-white/70 dark:bg-zinc-800/70'
+                    />
+                    {adultKeyError && (
+                      <p className='text-xs text-red-500 mt-2'>
+                        {adultKeyError}
+                      </p>
+                    )}
+                    <div className='flex justify-end gap-2 mt-4'>
+                      <button
+                        type='button'
+                        onClick={() => setShowAdultDialog(false)}
+                        className='rounded-lg px-4 py-2 text-sm text-[color:var(--ink-soft)] hover:bg-black/5 dark:hover:bg-white/10 transition-colors'
+                      >
+                        取消
+                      </button>
+                      <button
+                        type='button'
+                        onClick={handleAdultUnlock}
+                        disabled={!adultKeyInput.trim() || adultKeySubmitting}
+                        className='rounded-lg px-4 py-2 text-sm font-medium bg-[color:var(--brand)] text-white hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed'
+                      >
+                        {adultKeySubmitting ? '验证中…' : '解锁'}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
 
           {activeTab === 'pansou' &&
             netdiskSearchEnabled &&

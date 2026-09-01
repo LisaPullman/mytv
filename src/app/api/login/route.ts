@@ -1,6 +1,7 @@
 /* eslint-disable no-console,@typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 
+import { verifyAdultKey } from '@/lib/adult-access';
 import { parseAuthInfo } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
@@ -225,7 +226,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: '密码不能为空' }, { status: 400 });
       }
 
-      if (password !== envPassword) {
+      // foxai 分级登录：普通密码 = 标准账户；限制级密钥 = 完整账户（18+）
+      if (password !== envPassword && !verifyAdultKey(password)) {
         recordLoginFailure(clientIp);
         return NextResponse.json(
           { ok: false, error: '密码错误' },

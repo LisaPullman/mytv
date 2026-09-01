@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getAuthInfoFromCookie } from '@/lib/auth';
+import { getAdultLevel, isAdultSource } from '@/lib/adult-access';
 import { getAvailableApiSites, getCacheTime, getConfig } from '@/lib/config';
 import { searchFromApi } from '@/lib/downstream';
 import { getProxyToken } from '@/lib/emby-token';
@@ -44,9 +45,12 @@ export async function GET(request: NextRequest) {
   }
 
   const config = await getConfig();
-  const apiSites = privateOnly
+  // foxai 分级访问：非 adult 级别时 18+ 片源不参与搜索
+  const adultLevel = await getAdultLevel(request);
+  const apiSites = (privateOnly
     ? []
-    : await getAvailableApiSites(authInfo.username, includeSpecialSources);
+    : await getAvailableApiSites(authInfo.username, includeSpecialSources)
+  ).filter((site) => adultLevel === 'adult' || !isAdultSource(site.key, site.name));
   const [canAccessOpenList, canAccessEmby] = await Promise.all([
     hasFeaturePermission(authInfo.username, 'private_library'),
     hasFeaturePermission(authInfo.username, 'emby'),
@@ -270,7 +274,8 @@ export async function GET(request: NextRequest) {
       weight: result.weight ?? (weightMap.get(result.source) ?? 0),
     }));
 
-    if (!config.SiteConfig.DisableYellowFilter) {
+    // foxai 分级访问：标准级别下内容分类过滤始终生效（即使站点已关闭过滤）
+    if (adultLevel !== 'adult' || !config.SiteConfig.DisableYellowFilter) {
       flattenedResults = flattenedResults.filter((result) => {
         const typeName = result.type_name || '';
         return !yellowWords.some((word: string) => typeName.includes(word));

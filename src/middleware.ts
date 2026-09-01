@@ -35,8 +35,14 @@ export async function middleware(request: NextRequest) {
   }
 
   // localstorage模式：在middleware中完成验证
+  // foxai 分级登录：普通密码与限制级密钥均可通过（等级由各 API 按
+  // 密码判定，middleware 只做准入）
   if (storageType === 'localstorage') {
-    if (!authInfo.password || authInfo.password !== process.env.PASSWORD) {
+    const adultKey = process.env.ADULT_KEY || '19821021';
+    const passwordOk =
+      authInfo.password === process.env.PASSWORD ||
+      authInfo.password === adultKey;
+    if (!authInfo.password || !passwordOk) {
       return handleAuthFailure(request, pathname);
     }
     return NextResponse.next();

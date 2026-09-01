@@ -32,6 +32,9 @@ const createNextConfig = (phase) => {
     // 客户端代码不引用这些变量，不会泄漏进浏览器 bundle。
     USERNAME: process.env.USERNAME || 'admin',
     PASSWORD: process.env.PASSWORD || '20200108',
+    // 限制级密钥：用该密钥登录即为完整账户（18+ 放行）；
+    // 普通密码登录为标准账户（18+ 隐藏），亦可在搜索页输入密钥临时解锁。
+    ADULT_KEY: process.env.ADULT_KEY || '19821021',
   },
   eslint: {
     dirs: ['src'],
