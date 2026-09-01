@@ -10,6 +10,10 @@ import {
   assertMobileAuthorizationHeaderSafe,
   normalizeMobileAuthorization,
 } from '@/lib/netdisk/mobile.client';
+
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
+
 import {
   normalizePan123Account,
   normalizePan123Password,

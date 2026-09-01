@@ -9,6 +9,10 @@ import * as path from 'path';
 
 import { getAuthInfoFromCookie } from '@/lib/auth';
 
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
+
+
 // 检查是否启用离线下载功能
 const OFFLINE_DOWNLOAD_ENABLED = process.env.NEXT_PUBLIC_ENABLE_OFFLINE_DOWNLOAD === 'true';
 const OFFLINE_DOWNLOAD_DIR = process.env.OFFLINE_DOWNLOAD_DIR || '/data';

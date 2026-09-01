@@ -7,6 +7,10 @@ import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
 import { deleteCachedLiveChannels, refreshLiveChannels } from '@/lib/live';
 
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
+
+
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {

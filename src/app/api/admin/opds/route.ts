@@ -5,6 +5,10 @@ import { BookSource, BookSourceCapabilities } from '@/lib/book.types';
 import { db } from '@/lib/db';
 import { opdsClient } from '@/lib/opds.client';
 
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
+
+
 export const runtime = 'nodejs';
 
 interface TestSourceInput {

@@ -12,6 +12,10 @@ import {
   parseBaiduNetdiskId,
   refreshBaiduNetdiskSession,
 } from '@/lib/netdisk/baidu-session-cache';
+
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
+
 import {
   createMobileNetdiskSession,
   getMobileNetdiskSession,

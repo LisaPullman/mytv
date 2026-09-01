@@ -3,10 +3,12 @@ import { getAuthInfoFromCookie } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { generateTvboxToken } from '@/lib/tvbox-token';
 
-export const runtime = 'nodejs';
-// Route reads auth cookies via request.headers — must run dynamically.
+// Route reads request data — must run on the dynamic server, not at build time.
 export const dynamic = 'force-dynamic';
 
+
+export const runtime = 'nodejs';
+// Route reads auth cookies via request.headers — must run dynamically.
 /**
  * 获取用户的TVBox订阅token
  * 如果用户没有token，自动生成一个

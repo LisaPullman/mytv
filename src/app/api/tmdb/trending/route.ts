@@ -6,8 +6,6 @@ import { getTMDBTrendingContent, getTMDBVideos } from '@/lib/tmdb.client';
 // 缓存配置 - 服务器内存缓存3小时
 const CACHE_DURATION = 3 * 60 * 60 * 1000; // 3小时
 
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
 // 为不同数据源分别维护缓存
 let tmdbCache: { data: any; timestamp: number } | null = null;
 let txCache: { data: any; timestamp: number } | null = null;

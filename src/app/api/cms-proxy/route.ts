@@ -9,14 +9,15 @@ import {
 } from '@/lib/openlist-cache';
 import { getTMDBImageUrl } from '@/lib/tmdb.search';
 import { yellowWords } from '@/lib/yellow';
+
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 /**
  * CMS 采集站代理接口
  * 用于代理 CMS API 请求，并自动将播放链接替换为带去广告的代理链接
  * GET /api/cms-proxy?api=<CMS API地址>&参数1=值1&参数2=值2...
 
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
  */
 export async function GET(request: NextRequest) {
   try {

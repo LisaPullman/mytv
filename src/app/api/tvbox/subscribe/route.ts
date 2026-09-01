@@ -4,14 +4,16 @@ import { getAvailableApiSites, getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
 import { getCachedLiveChannels } from '@/lib/live';
 import { hasFeaturePermission } from '@/lib/permissions';
+
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
+
 export const runtime = 'nodejs';
 /**
  * TVBOX订阅API
  * 根据视频源和直播源生成TVBOX订阅
  * 支持全局token（管理员）和用户token（普通用户）
 
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
  */
 export async function GET(request: NextRequest) {
   // 检查是否开启订阅功能

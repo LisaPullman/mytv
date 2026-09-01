@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthorizedUsername } from '../_utils';
 import { getSuwayomiConfig, loginWithSimpleAuth } from '@/lib/suwayomi.client';
 
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
+
+
 export const runtime = 'nodejs';
 
 function resolveUpstreamUrl(serverBaseUrl: string, pathOrUrl: string): string {

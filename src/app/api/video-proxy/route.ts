@@ -3,6 +3,8 @@ import { validateProxyUrlServerSide } from '@/lib/server/ssrf';
 
 // Route reads request data — must run on the dynamic server, not at build time.
 export const dynamic = 'force-dynamic';
+
+
 export const runtime = 'nodejs';
 // 视频代理接口，支持Range请求
 export async function GET(request: Request) {

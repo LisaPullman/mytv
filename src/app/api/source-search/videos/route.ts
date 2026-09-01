@@ -4,6 +4,10 @@ import { getAuthInfoFromCookie } from '@/lib/auth';
 import { API_CONFIG, getAvailableApiSites } from '@/lib/config';
 import { SearchResult } from '@/lib/types';
 
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
+
+
 export const runtime = 'nodejs';
 
 interface CmsVideoItem {

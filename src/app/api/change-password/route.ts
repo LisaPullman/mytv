@@ -6,6 +6,10 @@ import { getAuthInfoFromCookie } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserDevices, revokeRefreshToken } from '@/lib/refresh-token';
 
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
+
+
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {

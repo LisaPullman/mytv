@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateAIComments, AIComment } from '@/lib/ai-comment-generator';
 import { getConfig } from '@/lib/config';
 
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
+
+
 export const runtime = 'nodejs';
 
 interface AICommentsResponse {

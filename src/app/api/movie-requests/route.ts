@@ -5,6 +5,10 @@ import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getStorage } from '@/lib/db';
 import { MovieRequest } from '@/lib/types';
 
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
+
+
 export const runtime = 'nodejs';
 
 // GET: 获取求片列表

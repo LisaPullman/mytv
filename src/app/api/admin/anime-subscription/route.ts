@@ -6,6 +6,10 @@ import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
 import { AnimeSubscription } from '@/types/anime-subscription';
 
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
+
+
 export const runtime = 'nodejs';
 
 /**

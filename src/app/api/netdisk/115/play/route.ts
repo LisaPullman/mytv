@@ -5,6 +5,10 @@ import { getPan115PlayUrl } from '@/lib/netdisk/pan115.client';
 import { getPan115NetdiskSession, refreshPan115NetdiskSession } from '@/lib/netdisk/pan115-session-cache';
 import { resolvePan115Session } from '@/lib/netdisk/pan115-session-resolver';
 
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
+
+
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {

@@ -2,14 +2,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getConfig } from '@/lib/config';
 import { hasFeaturePermission } from '@/lib/permissions';
+
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
+
 export const runtime = 'nodejs';
 /**
  * OpenList CMS 代理接口（动态路由）
  * 将 OpenList 私人影库转换为 TVBox 兼容的 CMS API 格式
  * 路径格式：/api/openlist/cms-proxy/{token}?ac=videolist&...
 
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
  */
 export async function GET(
   request: NextRequest,

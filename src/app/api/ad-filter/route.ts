@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server';
 import { getConfig } from '@/lib/config';
 export const runtime = 'nodejs';
 
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
 /**
  * GET /api/ad-filter
  * 获取自定义去广告代码配置（公开接口，无需认证）

@@ -12,6 +12,10 @@ import {
   getBatchFavoriteUpdateEmailTemplate,
   getBatchMangaUpdateEmailTemplate,
 } from '@/lib/email.templates';
+
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
+
 import { fetchVideoDetail } from '@/lib/fetchVideoDetail';
 import { refreshLiveChannels } from '@/lib/live';
 import { MangaChapter, MangaShelfItem } from '@/lib/manga.types';

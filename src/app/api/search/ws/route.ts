@@ -15,6 +15,10 @@ import {
   normalizeScriptSources,
 } from '@/lib/source-script';
 
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
+
+
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {

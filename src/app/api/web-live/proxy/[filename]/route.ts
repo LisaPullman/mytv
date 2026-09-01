@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { requireFeaturePermission } from '@/lib/permissions';
 
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
+
+
 function getBaseUrl(url: string): string {
   const urlObj = new URL(url);
   const pathParts = urlObj.pathname.split('/');

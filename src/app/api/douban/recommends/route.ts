@@ -6,6 +6,10 @@ import { getCacheTime } from '@/lib/config';
 import { fetchDoubanData } from '@/lib/douban';
 import { DoubanResult } from '@/lib/types';
 
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
+
+
 interface DoubanRecommendApiResponse {
   total: number;
   items: Array<{

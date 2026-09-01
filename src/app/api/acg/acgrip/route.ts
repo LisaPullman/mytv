@@ -6,10 +6,11 @@ import { getConfig } from '@/lib/config';
 import { getMagnetBaseUrl, universalMagnetFetch } from '@/lib/magnet.client';
 import { hasFeaturePermission } from '@/lib/permissions';
 
-export const runtime = 'nodejs';
 // Route reads request data — must run on the dynamic server, not at build time.
 export const dynamic = 'force-dynamic';
 
+
+export const runtime = 'nodejs';
 /**
  * POST /api/acg/acgrip
  * 搜索 ACG.RIP 磁力资源（仅管理员和站长可用，支持分页）

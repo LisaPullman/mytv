@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getConfig } from '@/lib/config';
 import { validateProxyUrlServerSide } from '@/lib/server/ssrf';
+
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
+
 export const runtime = 'nodejs';
 export const maxDuration = 60; // 设置最大执行时间为 60 秒
 /**
  * M3U8 代理接口
 
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
  * 用于外部播放器访问,会执行去广告逻辑并处理相对链接
  * GET /api/proxy-m3u8?url=<原始m3u8地址>&source=<播放源>&token=<鉴权token>
  */

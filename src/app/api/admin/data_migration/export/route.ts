@@ -10,6 +10,10 @@ import { db } from '@/lib/db';
 import { CURRENT_VERSION } from '@/lib/version';
 import { updateProgress, clearProgress } from '@/lib/data-migration-progress';
 
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
+
+
 export const runtime = 'nodejs';
 
 const gzipAsync = promisify(gzip);

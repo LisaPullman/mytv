@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { embyManager } from '@/lib/emby-manager';
 import { requireFeaturePermission } from '@/lib/permissions';
-export const runtime = 'nodejs';
 
 // Route reads request data — must run on the dynamic server, not at build time.
 export const dynamic = 'force-dynamic';
+
+export const runtime = 'nodejs';
+
 /**
  * 获取所有启用的Emby源列表
  */

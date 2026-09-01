@@ -4,10 +4,11 @@ import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { hasFeaturePermission } from '@/lib/permissions';
 
-export const runtime = 'nodejs';
 // Route reads request data — must run on the dynamic server, not at build time.
 export const dynamic = 'force-dynamic';
 
+
+export const runtime = 'nodejs';
 /**
  * 获取 Emby 客户端
  */

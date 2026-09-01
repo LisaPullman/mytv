@@ -6,6 +6,10 @@ import {
   orchestrateDataSources,
   VideoContext,
 } from '@/lib/ai-orchestrator';
+
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
+
 import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { hasFeaturePermission } from '@/lib/permissions';

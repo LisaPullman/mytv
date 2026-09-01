@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getConfig } from '@/lib/config';
 import { getTMDBUpcomingContent } from '@/lib/tmdb.client';
 
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
+
+
 // 内存缓存对象
 interface CacheItem {
   data: any;

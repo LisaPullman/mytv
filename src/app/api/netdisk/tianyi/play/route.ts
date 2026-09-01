@@ -6,6 +6,10 @@ import { getTianyiSharePlayUrl } from '@/lib/netdisk/tianyi.client';
 import { listTianyiShareVideos } from '@/lib/netdisk/tianyi.client';
 import { createTianyiNetdiskSession, getTianyiNetdiskSession, parseTianyiNetdiskId, refreshTianyiNetdiskSession } from '@/lib/netdisk/tianyi-session-cache';
 
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
+
+
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {

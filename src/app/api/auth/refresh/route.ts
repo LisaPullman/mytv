@@ -5,6 +5,10 @@ import { getAuthInfoFromCookie, parseAuthInfo } from '@/lib/auth';
 import { refreshAccessToken } from '@/lib/middleware-auth';
 import { TOKEN_CONFIG } from '@/lib/refresh-token';
 
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
+
+
 export const runtime = 'nodejs';
 
 const STORAGE_TYPE =
