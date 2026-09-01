@@ -236,6 +236,7 @@ async function getInitConfig(configFile: string, subConfig: {
     cfgFile.api_site = {};
     for (const s of DEFAULT_API_SITES) {
       cfgFile.api_site[s.key] = {
+        key: s.key,
         api: s.api,
         name: s.name,
         detail: s.detail,
