@@ -26,15 +26,16 @@ const createNextConfig = (phase) => {
   // Cloudflare Pages 不支持 standalone，使用默认输出
   output: isEdgeBuild ? undefined : 'standalone',
   env: {
-    // foxai 内置站点凭据：管理员 admin / 20200108。
-    // 未在 Vercel/环境变量中显式配置 USERNAME / PASSWORD 时生效，
-    // 访客进站同样需要输入该密码（localStorage 模式共用一个口令）。
+    // foxai 站点凭据：全部来自部署平台环境变量（如 Vercel → Settings →
+    // Environment Variables），仓库内不保留任何默认值，避免公开仓库泄漏。
+    // 未配置 PASSWORD 时站点会重定向到 /warning 配置引导页。
+    //   USERNAME   管理员用户名
+    //   PASSWORD   普通登录密码（标准账户：18+ 隐藏）
+    //   ADULT_KEY  限制级密钥（完整账户 + 搜索页解锁；不配置则分级功能停用）
     // 客户端代码不引用这些变量，不会泄漏进浏览器 bundle。
-    USERNAME: process.env.USERNAME || 'admin',
-    PASSWORD: process.env.PASSWORD || '20200108',
-    // 限制级密钥：用该密钥登录即为完整账户（18+ 放行）；
-    // 普通密码登录为标准账户（18+ 隐藏），亦可在搜索页输入密钥临时解锁。
-    ADULT_KEY: process.env.ADULT_KEY || '19821021',
+    USERNAME: process.env.USERNAME,
+    PASSWORD: process.env.PASSWORD,
+    ADULT_KEY: process.env.ADULT_KEY,
   },
   eslint: {
     dirs: ['src'],

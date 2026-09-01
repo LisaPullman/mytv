@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+// 仓库已无默认密钥,单测注入测试专用值
+process.env.ADULT_KEY = 'unit-test-adult-key';
+
 import {
   getAdultUnlockToken,
   hasAdultUnlockCookie,
@@ -18,9 +21,11 @@ describe('foxai 限制级访问控制 (adult-access)', () => {
   });
 
   it('密钥校验：仅正确的 ADULT_KEY 通过', () => {
+    expect(verifyAdultKey('unit-test-adult-key')).toBe(true);
     expect(verifyAdultKey(undefined)).toBe(false);
     expect(verifyAdultKey('')).toBe(false);
     expect(verifyAdultKey('wrong')).toBe(false);
+    expect(verifyAdultKey('20200108')).toBe(false); // 不与普通密码互通
   });
 
   it('解锁 cookie：签名 token 可被校验,伪造 token 拒绝', async () => {

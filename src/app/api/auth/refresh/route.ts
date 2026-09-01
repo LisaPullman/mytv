@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
 
   if (STORAGE_TYPE === 'localstorage') {
     // foxai 分级登录：普通密码与限制级密钥均有效
-    const adultKey = process.env.ADULT_KEY || '19821021';
+    const adultKey = process.env.ADULT_KEY || '';
     const passwordOk =
       authInfo.password === process.env.PASSWORD ||
       authInfo.password === adultKey;

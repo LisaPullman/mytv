@@ -38,7 +38,7 @@ export async function middleware(request: NextRequest) {
   // foxai 分级登录：普通密码与限制级密钥均可通过（等级由各 API 按
   // 密码判定，middleware 只做准入）
   if (storageType === 'localstorage') {
-    const adultKey = process.env.ADULT_KEY || '19821021';
+    const adultKey = process.env.ADULT_KEY || '';
     const passwordOk =
       authInfo.password === process.env.PASSWORD ||
       authInfo.password === adultKey;

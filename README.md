@@ -4,7 +4,7 @@
   <img src="public/logo.png" alt="foxai Logo" width="120">
 </div>
 
-> 🎬 **foxai** 是基于 [MoonTVPlus v250](https://github.com/mtvpls/MoonTVPlus)（其前身为 [MoonTV / LunaTV](https://github.com/MoonTechLab/LunaTV)）二次开发的品牌化影视聚合播放器 fork。开箱即用：内置精选片源与直播源、foxai 品牌视觉体系、默认站点凭据，专注 **Vercel** 一键部署。
+> 🎬 **foxai** 是基于 [MoonTVPlus v250](https://github.com/mtvpls/MoonTVPlus)（其前身为 [MoonTV / LunaTV](https://github.com/MoonTechLab/LunaTV)）二次开发的品牌化影视聚合播放器 fork。开箱即用：内置精选片源与直播源、foxai 品牌视觉体系、双密码分级访问（凭据经环境变量注入，仓库零明文），专注 **Vercel** 一键部署。
 
 <div align="center">
 
@@ -26,7 +26,7 @@
 | 📺 **内置精选片源** | 开箱即用 59 个实测可用片源（40 普通 + 19 限制级），无需配置即可搜索播放 |
 | 🔞 **限制级默认开启** | 18+ 片源默认放行；管理员可在 管理面板 → 站点设置 一键关闭，也可单独禁用任一 18+ 片源 |
 | 🔐 **双密码分级登录** | 普通密码登录 = 标准账户（18+ 片源完全隐藏）；限制级密钥登录 = 完整账户（含 18+），亦可在搜索页随时解锁/上锁（按设备记忆 30 天），见下方「分级访问」 |
-| 🔑 **默认站点凭据** | 内置管理员账号与进站密码（见仓库 `next.config.js`，环境变量可覆盖），访客进站需输入该密码 |
+| 🔑 **凭据环境变量注入** | 管理员账号与进站密码全部通过 Vercel 环境变量配置（`USERNAME` / `PASSWORD` / `ADULT_KEY`），仓库内零明文，公开仓库无泄漏风险 |
 | 🧹 **轻量化** | 移除 Docker / Cloudflare / EdgeOne / AndroidTV 客户端等冗余文件（-26MB），只保留 Vercel 部署路径 |
 | 🐛 **上游 bug 修复** | localStorage 模式搜索 500（`db.getGlobalValue` 空引用）、默认源回退缺失等 |
 
@@ -49,17 +49,18 @@
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/LisaPullman/mytv)
 
 1. Fork 或使用上方按钮将仓库导入 Vercel
-2. **不设任何环境变量也能跑**：默认 localStorage 模式，内置片源 + 默认凭据直接可用
-3. （推荐）在 Vercel → Settings → Environment Variables 按需覆盖：
+2. **先配凭据（必填）**：Vercel → Settings → Environment Variables 添加后 Redeploy：
 
-| 变量 | 说明 | foxai 默认值 |
+| 变量 | 说明 | 必填 |
 | ---- | ---- | ---- |
-| `USERNAME` | 管理员用户名 | 内置默认（见 `next.config.js`） |
-| `PASSWORD` | 管理员密码 / 访客进站密码 | 内置默认（见 `next.config.js`，**请务必改为强密码**） |
-| `NEXT_PUBLIC_SITE_NAME` | 站点名称（浏览器标题） | `foxai` |
-| `NEXT_PUBLIC_DISABLE_YELLOW_FILTER` | 限制级开关：`true` = 放行 18+ 内容，`false` = 开启过滤 | `true`（18+ 默认放行） |
-| `ADULT_KEY` | 限制级密钥（分级登录的完整账户密码，兼搜索页解锁密钥） | 内置默认（见 `next.config.js`） |
-| `NEXT_PUBLIC_STORAGE_TYPE` | 存储类型（见下表） | `localstorage` |
+| `USERNAME` | 管理员用户名 | ✅ |
+| `PASSWORD` | 管理员密码 / 访客进站密码（未配置时站点锁定到 /warning 引导页） | ✅ |
+| `ADULT_KEY` | 限制级密钥（分级登录 + 搜索页解锁；不配置则 18+ 分级功能停用） | 可选 |
+| `NEXT_PUBLIC_SITE_NAME` | 站点名称（浏览器标题），默认 `foxai` | 可选 |
+| `NEXT_PUBLIC_DISABLE_YELLOW_FILTER` | 限制级站点开关：`true` = 放行 18+（默认），`false` = 全局过滤 | 可选 |
+| `NEXT_PUBLIC_STORAGE_TYPE` | 存储类型（见下表），默认 `localstorage` | 可选 |
+
+> 仓库内不含任何默认账号密码（避免公开仓库泄漏）；凭据在构建期内联，修改后需 Redeploy。
 
 ### 🔐 分级访问（18+ 控制）
 
@@ -72,8 +73,6 @@
 | **临时解锁** | 任意账户登录后，搜索页选项卡旁点「🔒 限制级」→ 输入密钥 | 本设备解锁 30 天，可随时「重新上锁」 |
 
 > 数据库多用户模式下，每个账号可用各自的解锁状态；管理员想全局禁用 18+，直接在「采集源管理」禁用对应片源即可。
-
-> 内置默认凭据已编译进构建产物，正式对外使用请务必通过环境变量改掉 `PASSWORD`。
 
 ### 存储（播放记录 / 收藏 / 用户）
 
@@ -88,7 +87,7 @@
 
 ```bash
 pnpm install
-pnpm dev        # http://localhost:3000，登录密码为内置默认密码（见 next.config.js）
+PASSWORD=你的密码 USERNAME=你的用户名 pnpm dev   # 凭据经环境变量注入(也可写入 .env.local)
 pnpm build      # 生产构建
 ```
 
@@ -149,8 +148,8 @@ foxai 已内置默认片源；如需完全自定义，可在 管理面板 → �
 
 | 变量 | 说明 | 可选值 | 默认值 |
 | ---- | ---- | ---- | ---- |
-| `USERNAME` | 管理员账号 | 任意字符串 | 内置默认（见 `next.config.js`） |
-| `PASSWORD` | 管理员密码 | 任意字符串 | 内置默认（见 `next.config.js`） |
+| `USERNAME` | 管理员账号 | 任意字符串 | (空,必填) |
+| `PASSWORD` | 管理员密码 | 任意字符串 | (空,必填;未配置时站点锁定到 /warning) |
 | `NEXT_PUBLIC_SITE_NAME` | 站点名称 | 任意字符串 | `foxai` |
 | `NEXT_PUBLIC_STORAGE_TYPE` | 存储方式 | redis、kvrocks、upstash、d1、turso、postgres、localstorage | `localstorage` |
 | `KVROCKS_URL` / `REDIS_URL` | kvrocks / redis 连接 url | 连接 url | (空) |
@@ -194,7 +193,7 @@ foxai 已内置默认片源；如需完全自定义，可在 管理面板 → �
 
 ## ⚠️ 安全与隐私提醒
 
-1. **改掉默认密码**：仓库内置了默认管理员凭据（见 `next.config.js`），仅方便首次上手，请通过 `USERNAME` / `PASSWORD` 环境变量设置为强密码
+1. **凭据仅存于环境变量**：仓库不含任何默认密码。若曾用旧默认值部署过，旧值已出现在历史提交中——请视为已泄漏，在 Vercel 改用新的强密码并 Redeploy
 2. **仅供个人使用**：请勿将实例链接公开分享或用于商业用途
 3. **遵守当地法律**：18+ 内容默认开启，请在合法合规的前提下使用，必要时在管理面板关闭
 4. 本项目不存储任何视频资源，所有内容来自第三方采集源；因使用产生的法律责任由使用者自行承担

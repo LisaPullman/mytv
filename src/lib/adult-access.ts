@@ -20,9 +20,12 @@ import { getAuthInfoFromCookie } from './auth';
 export const ADULT_UNLOCK_COOKIE = 'adult_unlock';
 const ADULT_TOKEN_PAYLOAD = 'foxai-adult-unlock-v1';
 
-/** 限制级密钥（可用环境变量 ADULT_KEY 覆盖，默认值见 next.config.js） */
+/**
+ * 限制级密钥（仅来自环境变量 ADULT_KEY，仓库不存默认值）。
+ * 未配置时返回空串 —— 分级登录/解锁功能整体停用（verifyAdultKey 恒 false）。
+ */
 export function getAdultKey(): string {
-  return process.env.ADULT_KEY || '19821021';
+  return process.env.ADULT_KEY || '';
 }
 
 /** 是否为 18+ 片源：key 以 av 开头，或名称以 “18+” 前缀标识 */
