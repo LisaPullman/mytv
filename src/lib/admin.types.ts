@@ -17,6 +17,9 @@ export interface AdminConfig {
     DoubanImageProxyType: string;
     DoubanImageProxy: string;
     DisableYellowFilter: boolean;
+    // foxai 一次性默认值迁移标记：true = 已把 18+ 默认放行 + 补齐内置精选片源
+    // （用于把旧库（上游时代初始化的配置）平滑升级到 foxai 默认值，之后不再触发）
+    AdultDefaultApplied?: boolean;
     FluidSearch: boolean;
     // 弹幕配置
     DanmakuSourceType?: 'builtin' | 'custom';

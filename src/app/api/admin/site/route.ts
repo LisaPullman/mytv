@@ -274,6 +274,9 @@ export async function POST(request: NextRequest) {
     // 更新缓存中的站点设置
     // API Base URL 统一去尾斜杠，避免运行时拼接路径出现 //
     adminConfig.SiteConfig = {
+      // 先展开旧值，保留未出现在表单里的内部标记（如 foxai 迁移标记
+      // AdultDefaultApplied），避免保存设置后标记丢失导致迁移重复执行
+      ...adminConfig.SiteConfig,
       SiteName,
       Announcement,
       AnnouncementDisplayMode,

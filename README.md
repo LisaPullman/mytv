@@ -25,7 +25,7 @@
 | 🎨 **foxai 品牌层** | 完整 LOGO 体系（Mark / Tile / Lockup）+ Ember 配色 + aurora 渐变背景 + 玻璃拟态 UI，品牌规范见 [LOGO.html](./LOGO.html)（AI 可读，照抄即可复刻） |
 | 📺 **内置精选片源** | 开箱即用 59 个实测可用片源（40 普通 + 19 限制级），无需配置即可搜索播放 |
 | 🔞 **限制级默认开启** | 18+ 片源默认放行；管理员可在 管理面板 → 站点设置 一键关闭，也可单独禁用任一 18+ 片源 |
-| 🔑 **默认站点凭据** | 管理员 `admin` / `20200108`（环境变量可覆盖），访客进站需输入该密码 |
+| 🔑 **默认站点凭据** | 内置管理员账号与进站密码（见仓库 `next.config.js`，环境变量可覆盖），访客进站需输入该密码 |
 | 🧹 **轻量化** | 移除 Docker / Cloudflare / EdgeOne / AndroidTV 客户端等冗余文件（-26MB），只保留 Vercel 部署路径 |
 | 🐛 **上游 bug 修复** | localStorage 模式搜索 500（`db.getGlobalValue` 空引用）、默认源回退缺失等 |
 
@@ -53,8 +53,8 @@
 
 | 变量 | 说明 | foxai 默认值 |
 | ---- | ---- | ---- |
-| `USERNAME` | 管理员用户名 | `admin` |
-| `PASSWORD` | 管理员密码 / 访客进站密码 | `20200108`（**请务必改为强密码**） |
+| `USERNAME` | 管理员用户名 | 内置默认（见 `next.config.js`） |
+| `PASSWORD` | 管理员密码 / 访客进站密码 | 内置默认（见 `next.config.js`，**请务必改为强密码**） |
 | `NEXT_PUBLIC_SITE_NAME` | 站点名称（浏览器标题） | `foxai` |
 | `NEXT_PUBLIC_DISABLE_YELLOW_FILTER` | 限制级开关：`true` = 放行 18+ 内容，`false` = 开启过滤 | `true`（18+ 默认放行） |
 | `NEXT_PUBLIC_STORAGE_TYPE` | 存储类型（见下表） | `localstorage` |
@@ -74,7 +74,7 @@
 
 ```bash
 pnpm install
-pnpm dev        # http://localhost:3000，登录密码 20200108
+pnpm dev        # http://localhost:3000，登录密码为内置默认密码（见 next.config.js）
 pnpm build      # 生产构建
 ```
 
@@ -135,8 +135,8 @@ foxai 已内置默认片源；如需完全自定义，可在 管理面板 → �
 
 | 变量 | 说明 | 可选值 | 默认值 |
 | ---- | ---- | ---- | ---- |
-| `USERNAME` | 管理员账号 | 任意字符串 | `admin` |
-| `PASSWORD` | 管理员密码 | 任意字符串 | `20200108` |
+| `USERNAME` | 管理员账号 | 任意字符串 | 内置默认（见 `next.config.js`） |
+| `PASSWORD` | 管理员密码 | 任意字符串 | 内置默认（见 `next.config.js`） |
 | `NEXT_PUBLIC_SITE_NAME` | 站点名称 | 任意字符串 | `foxai` |
 | `NEXT_PUBLIC_STORAGE_TYPE` | 存储方式 | redis、kvrocks、upstash、d1、turso、postgres、localstorage | `localstorage` |
 | `KVROCKS_URL` / `REDIS_URL` | kvrocks / redis 连接 url | 连接 url | (空) |
@@ -180,7 +180,7 @@ foxai 已内置默认片源；如需完全自定义，可在 管理面板 → �
 
 ## ⚠️ 安全与隐私提醒
 
-1. **改掉默认密码**：内置 `admin / 20200108` 仅方便首次上手，请通过 `PASSWORD` 环境变量设置为强密码
+1. **改掉默认密码**：仓库内置了默认管理员凭据（见 `next.config.js`），仅方便首次上手，请通过 `USERNAME` / `PASSWORD` 环境变量设置为强密码
 2. **仅供个人使用**：请勿将实例链接公开分享或用于商业用途
 3. **遵守当地法律**：18+ 内容默认开启，请在合法合规的前提下使用，必要时在管理面板关闭
 4. 本项目不存储任何视频资源，所有内容来自第三方采集源；因使用产生的法律责任由使用者自行承担

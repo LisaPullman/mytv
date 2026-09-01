@@ -499,12 +499,15 @@ export async function getConfig(): Promise<AdminConfig> {
       adminConfig.EmbyConfig &&
       adminConfig.EmbyConfig.ServerURL &&
       !adminConfig.EmbyConfig.Sources;
+    // foxai 默认值迁移（补齐 18+ 片源并默认放行限制级），见 configSelfCheck
+    const needsFoxaiDefaultsMigration =
+      adminConfig.SiteConfig?.AdultDefaultApplied !== true;
 
     adminConfig = configSelfCheck(adminConfig);
     cachedConfig = adminConfig;
 
     // 如果进行了Emby配置迁移，保存到数据库
-    if (!dbReadFailed && needsEmbyMigration) {
+    if (!dbReadFailed && (needsEmbyMigration || needsFoxaiDefaultsMigration)) {
       try {
         await db.saveAdminConfig(adminConfig);
         console.log('[Config] Emby配置迁移已保存到数据库');
@@ -726,6 +729,49 @@ export function configSelfCheck(adminConfig: AdminConfig): AdminConfig {
   }
   if (!adminConfig.LiveConfig || !Array.isArray(adminConfig.LiveConfig)) {
     adminConfig.LiveConfig = [];
+  }
+
+  // foxai 一次性默认值迁移：配置库若初始化于上游/早期版本，则既没有 18+
+  // 片源，DisableYellowFilter 也常为 false（= 过滤开启），表现为"搜索限制级
+  // 无结果"。这里补齐缺失的内置片源/直播源并把限制级设为默认放行；标记
+  // AdultDefaultApplied 后不再重复执行，管理员之后可自由增删与开关。
+  if (adminConfig.SiteConfig.AdultDefaultApplied !== true) {
+    adminConfig.SiteConfig.AdultDefaultApplied = true;
+
+    adminConfig.SiteConfig.DisableYellowFilter =
+      process.env.NEXT_PUBLIC_DISABLE_YELLOW_FILTER !== 'false';
+
+    // 只增不删：不覆盖同名条目，也不动其 disabled 状态
+    const seenSourceKeys = new Set(
+      adminConfig.SourceConfig.map((s) => s.key)
+    );
+    for (const s of DEFAULT_API_SITES) {
+      if (!seenSourceKeys.has(s.key)) {
+        adminConfig.SourceConfig.push({
+          key: s.key,
+          name: s.name,
+          api: s.api,
+          detail: s.detail,
+          from: 'config',
+          disabled: false,
+        });
+      }
+    }
+    const seenLiveKeys = new Set(adminConfig.LiveConfig.map((l) => l.key));
+    for (const l of DEFAULT_LIVE_SOURCES) {
+      if (!seenLiveKeys.has(l.key)) {
+        adminConfig.LiveConfig.push({
+          key: l.key,
+          name: l.name,
+          url: l.url,
+          ua: undefined,
+          epg: l.epg,
+          channelNumber: 0,
+          from: 'config',
+          disabled: false,
+        });
+      }
+    }
   }
   if (
     !adminConfig.SpecialSourceApis ||
