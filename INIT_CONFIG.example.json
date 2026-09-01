@@ -242,7 +242,7 @@
       "detail": "https://apiyutu.com"
     },
     "avfanhao": {
-      "api": "https://fhapi9.com/api.php/provide/vod",
+      "api": "http://fhapi9.com/api.php/provide/vod",
       "name": "18+ 番号资源",
       "detail": "https://fhapi9.com"
     },

@@ -82,7 +82,7 @@ export const DEFAULT_API_SITES: DefaultApiSite[] = [
   { key: 'avnaixx',    name: '18+ 奶香资源',    api: 'https://naixxzy.com/api.php/provide/vod',         detail: 'https://naixxzy.com' },
   { key: 'avsenlin',   name: '18+ 森林资源',    api: 'https://slapibf.com/api.php/provide/vod',         detail: 'https://slapibf.com' },
   { key: 'avyutu',     name: '18+ 玉兔资源',    api: 'https://apiyutu.com/api.php/provide/vod',         detail: 'https://apiyutu.com' },
-  { key: 'avfanhao',   name: '18+ 番号资源',    api: 'https://fhapi9.com/api.php/provide/vod',          detail: 'https://fhapi9.com' },
+  { key: 'avfanhao',   name: '18+ 番号资源',    api: 'http://fhapi9.com/api.php/provide/vod',          detail: 'https://fhapi9.com' },
   { key: 'avjingpin',  name: '18+ 精品资源',    api: 'https://www.jingpinx.com/api.php/provide/vod',    detail: 'https://www.jingpinx.com' },
   { key: 'avlsb',      name: '18+ 老色逼资源',  api: 'https://apilsbzy1.com/api.php/provide/vod',       detail: 'https://apilsbzy1.com' },
   { key: 'avshayu',    name: '18+ 鲨鱼资源',    api: 'https://shayuapi.com/api.php/provide/vod',        detail: 'https://shayuapi.com' },

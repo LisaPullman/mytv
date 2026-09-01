@@ -344,10 +344,10 @@ async function getInitConfig(
         '',
       BangumiProxy: process.env.BANGUMI_PROXY || '',
       LiveChartProxy: process.env.LIVECHART_PROXY || '',
-      // Pansou配置
-      PansouApiUrl: '',
-      PansouUsername: '',
-      PansouPassword: '',
+      // Pansou配置（可通过环境变量预配置，自托管服务见 github.com/fish2018/pansou）
+      PansouApiUrl: process.env.PANSOU_API_URL || '',
+      PansouUsername: process.env.PANSOU_USERNAME || '',
+      PansouPassword: process.env.PANSOU_PASSWORD || '',
       PansouKeywordBlocklist: '',
       // 磁链配置
       MagnetProxy: '',
@@ -564,9 +564,9 @@ export function configSelfCheck(adminConfig: AdminConfig): AdminConfig {
       DanmakuApiToken: '87654321',
       DanmakuAutoLoadDefault: true,
       TMDBImageBaseUrl: DEFAULT_TMDB_IMAGE_BASE_URL,
-      PansouApiUrl: '',
-      PansouUsername: '',
-      PansouPassword: '',
+      PansouApiUrl: process.env.PANSOU_API_URL || '',
+      PansouUsername: process.env.PANSOU_USERNAME || '',
+      PansouPassword: process.env.PANSOU_PASSWORD || '',
       PansouKeywordBlocklist: '',
       MagnetProxy: '',
       MagnetMikanReverseProxy: '',

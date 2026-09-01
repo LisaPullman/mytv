@@ -116,6 +116,11 @@
   <p class="lede">
     <strong>Brand:</strong> foxai &nbsp;·&nbsp; <strong>Tagline:</strong> One key. Every model. &nbsp;·&nbsp; <strong>Accent:</strong> Ember (#E2571F) &nbsp;·&nbsp; <strong>Mark name:</strong> Trace
   </p>
+  <p class="lede">
+    <strong>Lockup 定稿（2026-09-01）：</strong>lockup = <em>Mark（品牌橙）</em> + <em>“foxai” 字标</em>。
+    无 “f.” 前缀、无中点、无描边容器；Mark 与 “ai” 同用品牌色，只有 “fox” 用中性墨色。
+    本文件是唯一事实来源 —— 任何 AI / 设计师读完 §1（路径）、§3（配色）、§4（配方）即可 1:1 复刻。
+  </p>
 </header>
 
 <!-- ============================================================== -->
@@ -220,41 +225,41 @@ fill (dot):     var(--brand)
   </svg>
 </div>
 
-<h3>2.3 Lockup — Mark + wordmark</h3>
-<p>The default for navbars, auth cards, and "powered by" placements. The mark inherits the foreground colour so it sits calmly next to text; the wordmark is set in 600-weight with a tightened tracking (-0.01em), and the letters <code class="inline">ai</code> lift to brand colour so the accent lands in the type, not just the glyph.</p>
+<h3>2.3 Lockup — Mark + wordmark（定稿版）</h3>
+<p>The default for navbars, auth cards, and "powered by" placements. <strong>The mark is set in the brand accent — the same Ember as the letters <code class="inline">ai</code></strong> — while “fox” stays in the neutral ink of the surrounding UI. The wordmark is 600-weight with tightened tracking (-0.01em). There is <strong>no</strong> “f.” prefix and <strong>no</strong> middle dot: the lockup reads <em>foxai</em>, even where the site name is displayed as something else.</p>
 
 <div class="preview">
   <span style="display: inline-flex; align-items: center; gap: 8px;">
     <svg width="28" height="28" viewBox="0 0 64 64" aria-label="foxai">
-      <g fill="none" stroke="currentColor" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round">
+      <g fill="none" stroke="var(--brand)" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M23 55V22c0-7.2 5.8-13 13-13h2"/>
         <path d="M12.5 31h21"/>
       </g>
-      <circle cx="49" cy="9" r="5.5" fill="currentColor"/>
+      <circle cx="49" cy="9" r="5.5" fill="var(--brand)"/>
     </svg>
-    <span style="font-weight: 600; letter-spacing: -0.01em; font-size: 17px; line-height: 1;">
+    <span style="font-weight: 600; letter-spacing: -0.01em; font-size: 17px; line-height: 1; color: var(--ink);">
       fox<span style="color: var(--brand);">ai</span>
     </span>
   </span>
   <span style="display: inline-flex; align-items: center; gap: 8px; color: var(--ink-soft); font-size: 13px;">
     <svg width="18" height="18" viewBox="0 0 64 64" aria-label="foxai">
-      <g fill="none" stroke="currentColor" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round">
+      <g fill="none" stroke="var(--brand)" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M23 55V22c0-7.2 5.8-13 13-13h2"/>
         <path d="M12.5 31h21"/>
       </g>
-      <circle cx="49" cy="9" r="5.5" fill="currentColor"/>
+      <circle cx="49" cy="9" r="5.5" fill="var(--brand)"/>
     </svg>
-    <span style="font-weight: 600; letter-spacing: -0.01em; font-size: 12px; line-height: 1;">
+    <span style="font-weight: 600; letter-spacing: -0.01em; font-size: 12px; line-height: 1; color: var(--ink);">
       fox<span style="color: var(--brand);">ai</span>
     </span>
-    <span>small size uses the mark at ~14–16 px and the wordmark at ~10–11 px</span>
+    <span>small size uses the mark at ~14–18 px and the wordmark at ~10–12 px</span>
   </span>
 </div>
 
 <!-- ============================================================== -->
-<h2>3. Color tokens</h2>
+<h2>3. Color tokens &amp; 配色方案</h2>
 
-<p>Three tokens, light + dark. Everything else (chart palette, focus rings, soft fills) is derived from <code class="inline">--brand</code>.</p>
+<p>Three core tokens, light + dark. Everything else (chart palette, focus rings, soft fills) is derived from <code class="inline">--brand</code>.</p>
 
 <div class="grid-2">
   <div>
@@ -274,6 +279,37 @@ fill (dot):     var(--brand)
 <p>
   The two Ember hues were chosen in OKLCH (not HSL) so the dark variant stays in the same perceived lightness class as the light variant — orange-on-white at 0.633 L flips to orange-on-black at 0.727 L and the saturation/chroma numbers barely move. Don't pick the dark variant by eye; the hue hovers at 39° in both modes.
 </p>
+
+<h3>3.1 完整色值换算表（复刻直接抄）</h3>
+<table>
+  <tr><th>Token / 用途</th><th>模式</th><th>HEX</th><th>RGB</th><th>HSL</th><th>OKLCH</th></tr>
+  <tr><td><code class="inline">--brand</code>（Mark、ai、主按钮、激活态）</td><td>Light</td><td><code class="inline">#E2571F</code></td><td><code class="inline">226, 87, 31</code></td><td><code class="inline">17°, 77%, 50%</code></td><td><code class="inline">0.633 0.185 39.6</code></td></tr>
+  <tr><td><code class="inline">--brand</code></td><td>Dark</td><td><code class="inline">#FF7A4D</code></td><td><code class="inline">255, 122, 77</code></td><td><code class="inline">15°, 100%, 65%</code></td><td><code class="inline">0.727 0.173 39</code></td></tr>
+  <tr><td><code class="inline">--brand-foreground</code>（Tile 反白 Mark / 按钮文字）</td><td>Light</td><td><code class="inline">#FFFFFF</code></td><td><code class="inline">255, 255, 255</code></td><td><code class="inline">0°, 0%, 100%</code></td><td><code class="inline">1 0 0</code></td></tr>
+  <tr><td><code class="inline">--brand-foreground</code></td><td>Dark</td><td><code class="inline">#1A1A1A</code></td><td><code class="inline">26, 26, 26</code></td><td><code class="inline">0°, 0%, 10%</code></td><td><code class="inline">0.16 0 0</code></td></tr>
+  <tr><td>lockup “fox” 与正文墨色 <code class="inline">--ink</code></td><td>Light</td><td>≈<code class="inline">#141414</code></td><td>—</td><td>—</td><td><code class="inline">0.205 0 0</code></td></tr>
+  <tr><td>lockup “fox” 与正文墨色 <code class="inline">--ink</code></td><td>Dark</td><td>≈<code class="inline">#F0F0F0</code></td><td>—</td><td>—</td><td><code class="inline">0.96 0 0</code></td></tr>
+</table>
+
+<h3>3.2 派生色（光晕 / 描边 / 焦点环）</h3>
+<table>
+  <tr><th>Token</th><th>Light</th><th>Dark</th><th>用途</th></tr>
+  <tr><td><code class="inline">--brand-muted</code></td><td><code class="inline">rgba(226,87,31,.12)</code></td><td><code class="inline">rgba(255,122,77,.16)</code></td><td>品牌底色块（hover 背景、导航激活底）</td></tr>
+  <tr><td><code class="inline">--brand-ring</code></td><td><code class="inline">rgba(226,87,31,.35)</code></td><td><code class="inline">rgba(255,122,77,.45)</code></td><td>焦点环外圈、光晕第二层</td></tr>
+  <tr><td><code class="inline">--brand-glow</code></td><td><code class="inline">rgba(226,87,31,.45)</code></td><td><code class="inline">rgba(255,122,77,.55)</code></td><td>霓虹光晕主色（卡片 hover、进度条辉光）</td></tr>
+</table>
+
+<h3>3.3 用色矩阵（哪个元素用哪个色）</h3>
+<table>
+  <tr><th>元素</th><th>颜色</th><th>说明</th></tr>
+  <tr><td>Mark（lockup 内）</td><td><code class="inline">var(--brand)</code></td><td>与 “ai” 完全同色（2026-09-01 定稿）</td></tr>
+  <tr><td>字标 “fox”</td><td><code class="inline">var(--ink)</code></td><td>中性墨色，随明暗模式切换</td></tr>
+  <tr><td>字标 “ai”</td><td><code class="inline">var(--brand)</code></td><td>品牌强调只落在后缀</td></tr>
+  <tr><td>Tile 底</td><td><code class="inline">#E2571F</code>（固定 Light 值）</td><td>favicon / 图标不随模式切换</td></tr>
+  <tr><td>Tile 内 Mark</td><td><code class="inline">#FFFFFF</code></td><td>Tile 恒用 Light 底 + 反白 Mark</td></tr>
+  <tr><td>主按钮</td><td>底 <code class="inline">--brand</code> · 字 <code class="inline">--brand-foreground</code></td><td>hover 用 brightness(1.1)，不做渐变</td></tr>
+  <tr><td>禁区</td><td colspan="2">任何蓝/绿色、渐变 Mark、描边容器、直接投影 Mark、Tile 加外框</td></tr>
+</table>
 
 <!-- ============================================================== -->
 <h2>4. Recipes</h2>
@@ -350,7 +386,8 @@ export function Tile({ size = 24, title, ...rest }: LogoProps) {
   )
 }
 
-/** Mark + "foxai" wordmark, where "ai" picks up the brand accent. */
+/** Mark (brand accent) + "foxai" wordmark — the mark and "ai" share the
+ *  brand colour, "fox" inherits the surrounding ink. No dot, no prefix. */
 export function Lockup({
   size = 24,
   title,
@@ -409,6 +446,7 @@ export function Lockup({
 
 <div class="rule"><span class="do">DO</span><span>Use the lockup at navbar/auth-card sizes (16–32 px mark, 10–22 px wordmark).</span></div>
 <div class="rule"><span class="do">DO</span><span>Use the tile wherever the bare mark would disappear (favicons, OS-tray, anything ≤ 24 px).</span></div>
+<div class="rule"><span class="do">DO</span><span>Set the lockup mark to <code class="inline">var(--brand)</code> — the exact same colour as the “ai” letters (2026-09-01 定稿).</span></div>
 <div class="rule"><span class="do">DO</span><span>Recolour the endpoint dot together with the strokes; never the strokes alone.</span></div>
 <div class="rule"><span class="do">DO</span><span>Keep a clear-space of at least one cap-height around the mark on every side.</span></div>
 
@@ -416,6 +454,7 @@ export function Lockup({
 <div class="rule"><span class="dont">DON'T</span><span>Don't outline the tile or drop-shadow the mark.</span></div>
 <div class="rule"><span class="dont">DON'T</span><span>Don't rotate, skew, or stretch the viewBox.</span></div>
 <div class="rule"><span class="dont">DON'T</span><span>Don't set the dot to a different colour from the strokes.</span></div>
+<div class="rule"><span class="dont">DON'T</span><span>Don't leave the lockup mark in the text ink colour（旧版方案，已废弃），and never add an “f.” prefix or a middle dot to the wordmark.</span></div>
 
 <!-- ============================================================== -->
 <h2>6. Design rationale (why it looks like this)</h2>
@@ -427,25 +466,51 @@ export function Lockup({
   <li><strong>Stroke width 7.5 on a 64-unit grid.</strong> 7.5 is the largest stroke that doesn't visually crowd the crossbar or eat the hook. Below 6 and the mark feels thin; above 9 and the negative space between bar and spine closes.</li>
   <li><strong>Corner radius 14 on the tile.</strong> 14/64 = 0.22, which sits between iOS (≈ 0.22) and Material (≈ 0.125). It reads as friendly without looking rounded.</li>
   <li><strong>"ai" gets the brand colour, "fox" stays neutral.</strong> The accent is the suffix, the value-neutral part stays black. This is deliberate: it's the brand saying "the AI is the accent, the fox is the carrier."</li>
+  <li><strong>The lockup mark takes the brand colour too（2026-09-01 定稿）.</strong> The original 2026-08 draft let the mark inherit the text ink so it "sat calmly" beside the wordmark. In practice the mark read as disabled/greyed-out, so the final rule is simpler and bolder: mark + “ai” share Ember, “fox” stays ink. Two accents, one carrier — replicate exactly this.</li>
 </ul>
 
 <!-- ============================================================== -->
-<h2>7. File map (where it lives in foxai)</h2>
+<h2>7. File map (where it lives in this repo)</h2>
 
 <table>
   <tr><th>File</th><th>What it contains</th></tr>
-  <tr><td><code class="inline">client/src/brand/logo.tsx</code></td><td>The <code class="inline">Mark</code>, <code class="inline">Tile</code>, and <code class="inline">Lockup</code> React components.</td></tr>
-  <tr><td><code class="inline">client/src/brand/brand.css</code></td><td>The <code class="inline">--brand</code>, <code class="inline">--brand-foreground</code>, <code class="inline">--brand-muted</code> tokens (light + dark).</td></tr>
-  <tr><td><code class="inline">client/public/favicon.svg</code></td><td>The static tile used as the browser favicon.</td></tr>
-  <tr><td><code class="inline">client/index.html</code></td><td>The <code class="inline">&lt;title&gt;</code> "foxai · Unified LLM Router" references the lockup copy.</td></tr>
+  <tr><td><code class="inline">src/components/Logo.tsx</code></td><td>The <code class="inline">FoxMark</code>, <code class="inline">FoxTile</code>, and <code class="inline">FoxLockup</code> React components.</td></tr>
+  <tr><td><code class="inline">src/app/globals.css</code></td><td>The <code class="inline">--brand</code>, <code class="inline">--brand-foreground</code>, <code class="inline">--brand-muted</code>, <code class="inline">--brand-ring</code>, <code class="inline">--brand-glow</code> tokens (light + dark) + surface utilities.</td></tr>
+  <tr><td><code class="inline">public/favicon.svg</code> / <code class="inline">public/favicon.ico</code></td><td>The static tile (any-size SVG + 16/32/48 PNG-in-ICO).</td></tr>
+  <tr><td><code class="inline">public/logo.png</code> / <code class="inline">public/icons/icon-*.png</code></td><td>Tile renders at 512 px / 192–512 px for PWA &amp; loading states.</td></tr>
+  <tr><td><code class="inline">scripts/generate-manifest.js</code></td><td>PWA manifest 模板（name “foxai 影视”、theme_color #E2571F）。</td></tr>
+</table>
+
+<h3>7.1 部署位置（本仓库内的实际落点）</h3>
+<table>
+  <tr><th>位置</th><th>变体</th><th>Mark / 字标尺寸</th></tr>
+  <tr><td>桌面侧栏（Sidebar.tsx）</td><td>Lockup</td><td>26 px / 16 px</td></tr>
+  <tr><td>移动端顶部（MobileHeader.tsx）</td><td>Lockup</td><td>18 px / 12 px</td></tr>
+  <tr><td>登录 / 注册卡片</td><td>Lockup</td><td>30 px / 19 px</td></tr>
+  <tr><td>浏览器标签 / PWA 图标</td><td>Tile</td><td>favicon 16–48 px；icon 192–512 px</td></tr>
+  <tr><td>轮播加载占位（BannerCarousel.tsx）</td><td>Tile (logo.png)</td><td>120 px</td></tr>
 </table>
 
 <p>
-  When porting into another project, copy §1 (paths), §3 (tokens), and one of the recipes in §4. Everything else is foxai-specific.
+  When porting into another project, copy §1 (paths), §3 (tokens + 配色方案), and one of the recipes in §4. Everything else is app-specific.
 </p>
 
+<!-- ============================================================== -->
+<h2>8. 复刻速查（AI Checklist）</h2>
+
+<p>给任何要 1:1 复刻本 LOGO 的人 / AI 的最短路径 —— 按顺序照抄即可，无需再做设计决策：</p>
+
+<ol>
+  <li><strong>画 Mark</strong>：viewBox <code class="inline">0 0 64 64</code>，两个圆头描边路径（stroke-width <code class="inline">7.5</code>，linecap/linejoin <code class="inline">round</code>）：<code class="inline">M23 55V22c0-7.2 5.8-13 13-13h2</code>（主干+顶钩）与 <code class="inline">M12.5 31h21</code>（横杠），再画实心圆 <code class="inline">circle(49, 9, r=5.5)</code>（端点）。</li>
+  <li><strong>上色（Lockup）</strong>：Mark 与 “ai” 用 Ember —— Light <code class="inline">#E2571F</code> / Dark <code class="inline">#FF7A4D</code>；“fox” 用中性墨色（Light ≈<code class="inline">#141414</code> / Dark ≈<code class="inline">#F0F0F0</code>）。</li>
+  <li><strong>排版</strong>：字标 “foxai” 紧跟 Mark，font-weight <code class="inline">600</code>、letter-spacing <code class="inline">-0.01em</code>、字标字号 ≈ Mark 尺寸 × 0.6、间距 4–8 px。禁止 “f.” 前缀、中点、描边容器、阴影。</li>
+  <li><strong>画 Tile</strong>（≤24 px 场景 / favicon）：64×64 圆角方形 rx=<code class="inline">14</code>，底色固定 Light Ember <code class="inline">#E2571F</code>，Mark 反白 <code class="inline">#FFFFFF</code>。</li>
+  <li><strong>落 CSS 变量</strong>：<code class="inline">--brand</code> / <code class="inline">--brand-foreground</code> / <code class="inline">--brand-muted</code>（+ 派生 ring/glow），Light+Dark 双值照抄 §3.1 / §3.2。</li>
+  <li><strong>验收</strong>：对比本文件各预览图；Mark 的圆点与笔画永远同色；“fox” 永远中性；Tile 永远 Light 底反白。</li>
+</ol>
+
 <footer>
-  Last revised 2026-08-30 · foxai brand layer
+  Last revised 2026-09-01 · foxai brand layer · lockup 定稿：Mark 品牌色 + “foxai” 无中点
 </footer>
 
 </div>

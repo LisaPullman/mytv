@@ -143,6 +143,9 @@ export default async function RootLayout({
   let analyticsCustomScript = '';
   let musicFeatureEnabled = false;
   let suwayomiEnabled = false;
+  // 网盘搜索（Pansou）：未配置 API 地址时隐藏入口，避免点开报错。
+  // 可用环境变量 PANSOU_API_URL 预配置（自托管服务见 github.com/fish2018/pansou）。
+  let pansouConfigured = !!process.env.PANSOU_API_URL;
   let booksEnabled =
     process.env.OPDS_ENABLED === 'true' ||
     process.env.LEGADO_ENABLED === 'true';
@@ -238,6 +241,8 @@ export default async function RootLayout({
     analyticsCustomScript = config.SiteConfig?.AnalyticsCustomScript || '';
     // 音乐功能配置
     musicFeatureEnabled = config.MusicConfig?.Enabled || false;
+    // 网盘搜索：以数据库中的 Pansou 配置为准
+    pansouConfigured = !!config.SiteConfig.PansouApiUrl;
     musicProxyEnabled = config.MusicConfig?.ProxyEnabled ?? true;
     // 漫画功能配置
     suwayomiEnabled = !!(
@@ -344,7 +349,8 @@ export default async function RootLayout({
     MUSIC_PROXY_ENABLED: musicProxyEnabled,
     SUWAYOMI_ENABLED: suwayomiEnabled && userFeatureAccess.manga,
     BOOKS_ENABLED: booksEnabled && userFeatureAccess.books,
-    NETDISK_SEARCH_ENABLED: userFeatureAccess.netdisk_search,
+    NETDISK_SEARCH_ENABLED:
+      userFeatureAccess.netdisk_search && pansouConfigured,
     MAGNET_SEARCH_ENABLED: userFeatureAccess.magnet_search,
     MAGNET_SAVE_PRIVATE_LIBRARY_ENABLED:
       userFeatureAccess.magnet_save_private_library,

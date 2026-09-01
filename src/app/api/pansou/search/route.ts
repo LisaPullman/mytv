@@ -45,7 +45,10 @@ export async function POST(request: NextRequest) {
 
     if (!apiUrl) {
       return NextResponse.json(
-        { error: '未配置 Pansou API 地址，请在管理面板配置' },
+        {
+          error:
+            '未配置 Pansou API 地址。Pansou 为开源自托管网盘搜索服务（github.com/fish2018/pansou，Docker 一行部署：docker run -d -p 8888:8888 ghcr.io/fish2018/pansou:latest），部署后在 管理面板 → 站点设置 填写 API 地址，或在 Vercel 设置环境变量 PANSOU_API_URL（可配合 PANSOU_USERNAME / PANSOU_PASSWORD）。',
+        },
         { status: 400 }
       );
     }
