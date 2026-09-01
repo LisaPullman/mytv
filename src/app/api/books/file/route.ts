@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { opdsClient } from '@/lib/opds.client';
 import { getAuthorizedBooksUsername } from '../_utils';
+
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 type FilePayload = {
   sourceId?: string;
   bookId?: string;
   href?: string;
-
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
   format?: 'epub' | 'pdf' | null;
 };
 async function resolveFileHref(username: string, payload: FilePayload): Promise<{ sourceId: string; href: string }> {
@@ -101,3 +101,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: (error as Error).message }, { status: 400 });
   }
 }
+

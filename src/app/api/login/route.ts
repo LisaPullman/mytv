@@ -4,13 +4,13 @@ import { parseAuthInfo } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
 import {
+
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
   generateRefreshToken,
   generateTokenId,
   storeRefreshToken,
   TOKEN_CONFIG,
-
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
 } from '@/lib/refresh-token';
 export const runtime = 'nodejs';
 // 读取存储类型环境变量，默认 localstorage
@@ -309,3 +309,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: '服务器错误' }, { status: 500 });
   }
 }
+

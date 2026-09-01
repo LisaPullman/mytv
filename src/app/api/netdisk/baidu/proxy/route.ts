@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getBaiduDirectPlayUrl } from '@/lib/netdisk/baidu.client';
 import { resolveBaiduSession } from '@/lib/netdisk/baidu-session-resolver';
+
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export async function GET(request: NextRequest) {
   try {
     const authInfo = getAuthInfoFromCookie(request);
-
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
     if (!authInfo?.username) {
       return NextResponse.json({ error: '未授权' }, { status: 401 });
     }
@@ -106,3 +106,4 @@ export const dynamic = 'force-dynamic';
     );
   }
 }
+

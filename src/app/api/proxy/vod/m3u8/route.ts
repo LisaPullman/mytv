@@ -4,14 +4,14 @@ import { getConfig } from "@/lib/config";
 import { getBaseUrl, resolveUrl } from "@/lib/live";
 import { validateProxyUrlServerSide } from '@/lib/server/ssrf';
 import { buildProxyM3u8Headers, buildProxyStreamHeaders } from '@/lib/server/proxy-headers';
+
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const url = searchParams.get('url');
   const source = searchParams.get('source'); // 视频源key
-
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
   if (!url) {
     return NextResponse.json({ error: 'Missing url' }, { status: 400 });
   }
@@ -160,3 +160,4 @@ function rewriteKeyUri(line: string, baseUrl: string, proxyBase: string, source:
   }
   return line;
 }
+

@@ -2,11 +2,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getConfig } from '@/lib/config';
 import { CURRENT_VERSION } from '@/lib/version';
+
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export async function GET(request: NextRequest) {
 
 // Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
   console.log('server-config called: ', request.url);
   const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
   const isLiteMode = process.env.MOONTV_LITE === 'true';
@@ -68,3 +70,4 @@ export const dynamic = 'force-dynamic';
   };
   return NextResponse.json(result);
 }
+

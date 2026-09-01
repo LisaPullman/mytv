@@ -2,14 +2,14 @@
 import { NextResponse } from "next/server";
 import { getConfig } from "@/lib/config";
 import { getBaseUrl, resolveUrl } from "@/lib/live";
+
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const url = searchParams.get('url');
   const allowCORS = searchParams.get('allowCORS') === 'true';
-
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
   const source = searchParams.get('moontv-source');
   if (!url) {
     return NextResponse.json({ error: 'Missing url' }, { status: 400 });

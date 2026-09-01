@@ -2,12 +2,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getConfig } from '@/lib/config';
 import { getThemeCSS } from '@/styles/themes';
-export const runtime = 'nodejs';
-export async function GET(request: NextRequest) {
-  try {
 
 // Route reads request data — must run on the dynamic server, not at build time.
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export async function GET(request: NextRequest) {
+  try {
     const adminConfig = await getConfig();
     const themeConfig = adminConfig.ThemeConfig;
     // 如果没有配置主题，返回空CSS
@@ -64,3 +64,4 @@ export const dynamic = 'force-dynamic';
     });
   }
 }
+

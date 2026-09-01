@@ -1,13 +1,13 @@
 /* eslint-disable no-console */
 import { NextRequest, NextResponse } from 'next/server';
 import { requireFeaturePermission } from '@/lib/permissions';
+
+// Route reads request data — must run on the dynamic server, not at build time.
+export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 // 代理音频流
 export async function GET(request: NextRequest) {
   try {
-
-// Route reads request data — must run on the dynamic server, not at build time.
-export const dynamic = 'force-dynamic';
     const authResult = await requireFeaturePermission(request, 'music', '无权限访问音乐功能');
     if (authResult instanceof NextResponse) return authResult;
     const { searchParams } = new URL(request.url);
@@ -107,3 +107,4 @@ export const dynamic = 'force-dynamic';
     );
   }
 }
+
